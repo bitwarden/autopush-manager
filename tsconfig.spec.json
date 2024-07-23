@@ -1,7 +1,8 @@
 {
   "extends": "./tsconfig.json",
   "include": [
-    "./spec/custom-matchers.d.ts"
+    "src",
+    "spec"
   ],
   "files": [
     "./spec/**/*.ts",

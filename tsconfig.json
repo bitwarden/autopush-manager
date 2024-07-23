@@ -35,9 +35,7 @@
     "spec"
   ],
   "exclude": [
-    "node_modules/**",
-    "src/**/*.spec.ts",
-    "src/**/*.*-spec.ts"
+    "node_modules/**"
   ],
   "compileOnSave": false
 }

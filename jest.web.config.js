@@ -12,7 +12,7 @@ module.exports = {
   displayName: "web-specific tests",
   preset: "ts-jest",
   testEnvironment: "./test.environment.ts",
-  setupFilesAfterEnv: ["<rootDir>/test.setup.ts"],
+  setupFilesAfterEnv: ["<rootDir>/test.web.setup.ts"],
   moduleNameMapper: pathsToModuleNameMapper(compilerOptions?.paths || {}, {
     prefix: "<rootDir>/",
   }),

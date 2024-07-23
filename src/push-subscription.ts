@@ -112,6 +112,8 @@ export class PushSubscription<const TChannelId extends Guid> implements PublicPu
       return;
     }
 
+    // Decrypt Message
+
     if (
       message.headers["Content-Encoding"] !== "aesgcm" ||
       !message.headers["Encryption"] ||
@@ -150,6 +152,8 @@ export class PushSubscription<const TChannelId extends Guid> implements PublicPu
       this.logger.error("Error decrypting notification", e);
       throw ClientAckCodes.DECRYPT_FAIL;
     }
+
+    // TODO Remove padding
 
     this.eventManager.dispatchEvent("notification", fromBufferToUtf8(decryptedContent));
     this.logger.debug("Handled notification", message);

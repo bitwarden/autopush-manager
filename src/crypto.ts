@@ -23,7 +23,7 @@ if (isNode) {
 export function randomBytes(size: number): Promise<CsprngArray> {
   if (isNode) {
     return new Promise<CsprngArray>((resolve, reject) => {
-      nodeCrypto.randomBytes(length, (error, bytes) => {
+      nodeCrypto.randomBytes(size, (error, bytes) => {
         if (error != null) {
           reject(error);
         } else {
@@ -44,12 +44,14 @@ export async function aesGcmDecrypt(
   iv: ArrayBuffer
 ): Promise<ArrayBuffer> {
   if (isNode) {
-    data = Buffer.from(data.slice(0, data.byteLength - 16));
+    const dataBuffer = Buffer.from(data.slice(0, data.byteLength - 16));
     const authTag = Buffer.from(data.slice(data.byteLength - 16));
-    const cryptoKey = nodeCrypto.createSecretKey(new DataView(key));
-    const cipher = nodeCrypto.createDecipheriv("aes-256-gcm", cryptoKey, new DataView(iv));
+    const cryptoKey = nodeCrypto.createSecretKey(Buffer.from(key));
+    const cipher = nodeCrypto.createDecipheriv("aes-128-gcm", cryptoKey, Buffer.from(iv));
     cipher.setAuthTag(authTag);
-    return Buffer.concat([cipher.update(Buffer.from(data)), cipher.final()]);
+    const decrypted = cipher.update(dataBuffer);
+    cipher.final();
+    return decrypted;
   } else {
     const impKey = await webCrypto.subtle.importKey("raw", key, { name: "AES-GCM" }, false, [
       "decrypt",

@@ -12,7 +12,7 @@ module.exports = {
   displayName: "node-specific tests",
   preset: "ts-jest",
   testEnvironment: "node",
-  setupFilesAfterEnv: ["<rootDir>/test.setup.node.ts"],
+  setupFilesAfterEnv: ["<rootDir>/test.node.setup.ts"],
   moduleNameMapper: pathsToModuleNameMapper(compilerOptions?.paths || {}, {
     prefix: "<rootDir>/",
   }),
