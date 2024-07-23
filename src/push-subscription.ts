@@ -9,15 +9,17 @@ import { NamespacedLogger } from "./logger";
 import { ClientAckCodes, ServerNotification } from "./messages/message";
 import { NamespacedStorage } from "./storage";
 import {
-  aesGcmDecrypt,
-  ecdhDeriveSharedKey,
-  fromB64ToBuffer,
-  fromBufferToUrlB64,
-  fromBufferToUtf8,
-  fromUtf8ToBuffer,
-  generateEcKeys,
   Guid,
   JoinStrings,
+  fromUtf8ToBuffer,
+  fromBufferToUtf8,
+  fromB64ToBuffer,
+  fromBufferToUrlB64,
+} from "./string-manipulation";
+import {
+  aesGcmDecrypt,
+  ecdhDeriveSharedKey,
+  generateEcKeys,
   randomBytes,
   readEcKeys,
   verifyVapidAuth,

@@ -1,6 +1,6 @@
 import { Tagged } from "type-fest";
 import { NamespacedLogger } from "./logger";
-import { Guid, JoinStrings, newGuid } from "./util";
+import { Guid, JoinStrings, newGuid } from "./string-manipulation";
 
 type EventCallback = (...args: any[]) => void;
 type EventMap = { [eventName: string]: EventCallback };

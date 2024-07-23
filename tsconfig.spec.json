@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "./spec/custom-matchers.d.ts"
+  ],
+  "files": [
+    "./spec/**/*.ts",
+    "./test.setup.ts"
+  ]
+}

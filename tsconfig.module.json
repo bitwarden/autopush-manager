@@ -5,6 +5,10 @@
     "outDir": "build/module",
     "module": "esnext"
   },
+  "include": [
+    "src/**/*.ts",
+    "spec/custom-matchers.d.ts"
+  ],
   "exclude": [
     "node_modules/**"
   ]
