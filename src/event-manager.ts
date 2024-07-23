@@ -4,7 +4,7 @@ import { Guid, JoinStrings, newGuid } from "./util";
 
 type EventCallback = (...args: any[]) => void;
 type EventMap = { [eventName: string]: EventCallback };
-type ListenerId = Tagged<Guid, "ListenerId">;
+export type ListenerId = Tagged<Guid, "ListenerId">;
 
 export class EventManager<const TEventMap extends EventMap> {
   private readonly callbacks: {

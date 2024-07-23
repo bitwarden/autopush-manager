@@ -4,7 +4,7 @@ import {
   EncodedSymmetricKey,
   EncodedUncompressedPublicKey,
 } from "./crypto-types";
-import { EventManager } from "./event-manager";
+import { EventManager, ListenerId } from "./event-manager";
 import { NamespacedLogger } from "./logger";
 import { ClientAckCodes, ServerNotification } from "./messages/message";
 import { NamespacedStorage } from "./storage";
@@ -52,10 +52,22 @@ export type PublicPushSubscription = {
 
   getKey(key: "auth" | "p256dh"): string;
   unsubscribe(): Promise<void>;
+  addEventListener<K extends keyof PushSubscriptionEvents>(
+    type: K,
+    listener: PushSubscriptionEvents[K]
+  ): ListenerId;
+  removeEventListener<K extends keyof PushSubscriptionEvents>(
+    type: K,
+    listenerId: ListenerId
+  ): void;
+};
+
+type PushSubscriptionEvents = {
+  notification: (data: string | null) => void;
 };
 
 export class PushSubscription<const TChannelId extends Guid> implements PublicPushSubscription {
-  private readonly eventManager: EventManager<{ notification: (data: string | null) => void }>;
+  private readonly eventManager: EventManager<PushSubscriptionEvents>;
   public constructor(
     private readonly storage: NamespacedStorage<TChannelId>,
     private readonly endpoint: URL,
@@ -248,6 +260,17 @@ export class PushSubscription<const TChannelId extends Guid> implements PublicPu
 
   unsubscribe(): Promise<void> {
     return this.unsubscribeCallback();
+  }
+
+  addEventListener<K extends keyof PushSubscriptionEvents>(
+    type: K,
+    listener: PushSubscriptionEvents[K]
+  ): ListenerId {
+    return this.eventManager.addEventListener(type, listener);
+  }
+
+  removeEventListener<K extends keyof PushSubscriptionEvents>(type: K, listenerId: ListenerId) {
+    this.eventManager.removeEventListener(type, listenerId);
   }
 }
 
