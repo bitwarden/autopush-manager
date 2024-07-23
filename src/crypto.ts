@@ -8,11 +8,7 @@ import {
 } from "./crypto-types";
 import { Storage } from "./storage";
 import { fromUrlB64ToBuffer, fromUtf8ToBuffer } from "./string-manipulation";
-
-export const isNode =
-  typeof process !== "undefined" && process.versions != null && process.versions.node != null;
-export const isBrowser = typeof window !== "undefined";
-export const _global = isNode ? global : isBrowser ? window : self;
+import { isNode, _global } from "./util";
 
 let webCrypto: typeof self.crypto;
 if (!isNode) {

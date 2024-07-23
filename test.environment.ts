@@ -1,4 +1,5 @@
 import JSDOMEnvironment from "jest-environment-jsdom";
+import { TextEncoder, TextDecoder } from "util";
 
 /**
  * Maps Node's APIs to the jsdom global object to work around
@@ -24,5 +25,8 @@ export default class FixJSDOMEnvironment extends JSDOMEnvironment {
     this.global.Headers = Headers;
     this.global.Request = Request;
     this.global.Response = Response;
+    this.global.OverrideIsNode = true;
+    this.global.TextEncoder = TextEncoder;
+    this.global.TextDecoder = TextDecoder as any;
   }
 }

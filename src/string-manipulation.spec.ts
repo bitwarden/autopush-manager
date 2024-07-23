@@ -1,4 +1,16 @@
-import { fromB64ToBuffer, fromB64toUrlB64, fromUrlB64ToB64 } from "./string-manipulation";
+import { fromB64ToBuffer, fromB64toUrlB64, fromUrlB64ToB64, newGuid } from "./string-manipulation";
+
+describe("newGuid", () => {
+  it("returns a new guid", () => {
+    expect(newGuid()).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+    );
+  });
+
+  it("creates a new guid each time", () => {
+    expect(newGuid()).not.toEqual(newGuid());
+  });
+});
 
 describe("fromB64toUrlB64", () => {
   it("removes padding", () => {
