@@ -6,16 +6,21 @@ import {
 } from "./crypto-types";
 import { EventManager } from "./event-manager";
 import { NamespacedLogger } from "./logger";
-import { ServerNotification } from "./messages/message";
+import { ClientAckCodes, ServerNotification } from "./messages/message";
 import { NamespacedStorage } from "./storage";
 import {
+  aesGcmDecrypt,
+  ecdhDeriveSharedKey,
   fromB64ToBuffer,
   fromBufferToUrlB64,
+  fromBufferToUtf8,
+  fromUtf8ToBuffer,
   generateEcKeys,
   Guid,
   JoinStrings,
   randomBytes,
   readEcKeys,
+  verifyVapidAuth,
   writeEcKeys,
 } from "./util";
 
@@ -62,11 +67,77 @@ export class PushSubscription<const TChannelId extends Guid> implements PublicPu
     this.eventManager = new EventManager(logger.extend("EventManager"));
   }
 
+  /**
+   * Handles a notification message.
+   *
+   * Authenticates the deliverer, decrypts the message, and dispatches the decrypted data as a `notification` event.
+   *
+   * If no message data is present, dispatches a null `notification` event.
+   * @param message
+   *
+   * @throws {ClientAckCodes.OTHER_FAIL} if the message is missing headers
+   * @throws {ClientAckCodes.OTHER_FAIL} if the message is missing an Authorization header
+   * @throws {ClientAckCodes.DECRYPT_FAIL} if the message contains data, but is missing headers required to decrypt
+   * @throws {ClientAckCodes.DECRYPT_FAIL} if message data decryption fails
+   */
   public async handleNotification(message: ServerNotification) {
     this.logger.debug("Handling notification", message);
-    // TODO authenticate
-    // TODO decrypt
-    this.eventManager.dispatchEvent("notification", message.data);
+
+    // FIXME: Do we need to validate authorization, or is this handled by autopush?
+    if (
+      !message.headers ||
+      !message.headers["Authorization"] ||
+      !verifyVapidAuth(this.options.applicationServerKey, message.headers["Authorization"])
+    ) {
+      throw ClientAckCodes.OTHER_FAIL;
+    }
+
+    if (!message.data) {
+      this.logger.debug("Notification has no data", message);
+      this.eventManager.dispatchEvent("notification", null);
+      return;
+    }
+
+    if (
+      message.headers["Content-Encoding"] !== "aesgcm" ||
+      !message.headers["Encryption"] ||
+      !message.headers["Crypto-Key"]
+    ) {
+      throw ClientAckCodes.DECRYPT_FAIL;
+    }
+
+    const encryptionHeader = message.headers["Encryption"];
+    const salt = encryptionHeader.substring(encryptionHeader.indexOf("salt=") + 5);
+    const cryptoKeyHeader = message.headers["Crypto-Key"];
+    const senderPublicKey = cryptoKeyHeader
+      .split(";")
+      .find((v) => v.startsWith("dh="))
+      ?.substring(3);
+
+    if (!senderPublicKey) {
+      throw ClientAckCodes.DECRYPT_FAIL;
+    }
+
+    const { contentEncryptionKey, nonce } = await ecdhDeriveSharedKey(
+      this.keys.ecKeys,
+      this.keys.auth,
+      senderPublicKey,
+      salt
+    );
+
+    let decryptedContent: ArrayBuffer;
+    try {
+      decryptedContent = await aesGcmDecrypt(
+        fromUtf8ToBuffer(message.data),
+        contentEncryptionKey,
+        nonce
+      );
+    } catch (e) {
+      this.logger.error("Error decrypting notification", e);
+      throw ClientAckCodes.DECRYPT_FAIL;
+    }
+
+    this.eventManager.dispatchEvent("notification", fromBufferToUtf8(decryptedContent));
     this.logger.debug("Handled notification", message);
   }
 
