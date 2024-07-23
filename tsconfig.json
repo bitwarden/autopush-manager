@@ -32,7 +32,7 @@
   },
   "include": [
     "src",
-    "spec",
+    "spec"
   ],
   "exclude": [
     "node_modules/**",

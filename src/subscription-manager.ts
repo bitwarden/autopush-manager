@@ -1,7 +1,7 @@
 import { NamespacedLogger } from "./logger";
 import { NamespacedStorage, Storage } from "./storage";
 import { PushSubscription, PushSubscriptionOptions } from "./push-subscription";
-import { Guid } from "./util";
+import { Guid } from "./crypto";
 
 export class SubscriptionHandler {
   private subscriptions: Record<Guid, PushSubscription<Guid>> = {};

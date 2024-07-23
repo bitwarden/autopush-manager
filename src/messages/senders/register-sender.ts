@@ -3,7 +3,7 @@ import { NamespacedLogger } from "../../logger";
 import { MessageSender } from "./message-sender";
 import { MessageMediator } from "../message-mediator";
 import { PushSubscriptionOptions } from "../../push-subscription";
-import { newGuid } from "../../util";
+import { newGuid } from "../../crypto";
 import { RegisterHandler } from "../handlers/register-handler";
 
 type RegisterDeps = { readonly options: PushSubscriptionOptions };

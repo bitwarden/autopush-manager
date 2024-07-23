@@ -5,7 +5,7 @@ import {
   PushSubscription,
   PushSubscriptionOptions,
 } from "./push-subscription";
-import { Guid } from "./util";
+import { Guid } from "./crypto";
 import { SubscriptionHandler } from "./subscription-manager";
 import { MessageMediator } from "./messages/message-mediator";
 import { HelloSender } from "./messages/senders/hello-sender";

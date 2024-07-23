@@ -8,7 +8,7 @@ import {
 import { UnregisterSender } from "../senders/unregister-sender";
 import { MessageMediator } from "../message-mediator";
 import { MessageHandler } from "./message-handler";
-import { Guid } from "../../util";
+import { Guid } from "../../crypto";
 import { EventManager } from "../../event-manager";
 
 export class UnregisterHandler implements MessageHandler<ServerUnregister> {

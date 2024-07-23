@@ -1,5 +1,5 @@
 import { NamespacedLogger } from "../../logger";
-import { Guid } from "../../util";
+import { Guid } from "../../crypto";
 import { UnregisterHandler } from "../handlers/unregister-handler";
 import { ClientUnregister, ClientUnregisterCode } from "../message";
 import { MessageMediator } from "../message-mediator";

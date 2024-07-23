@@ -3,7 +3,7 @@ import { AutoConnectServerMessage, ClientUnregisterCodes, ServerRegister } from 
 import { PushSubscriptionOptions, PushSubscription } from "../../push-subscription";
 import { MessageMediator } from "../message-mediator";
 import { MessageHandler } from "./message-handler";
-import { Guid } from "../../util";
+import { Guid } from "../../crypto";
 import { RegisterSender } from "../senders/register-sender";
 import { UnregisterSender } from "../senders/unregister-sender";
 import { EventManager } from "../../event-manager";

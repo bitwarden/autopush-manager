@@ -1,4 +1,4 @@
-import type { JoinStrings } from "./util";
+import type { JoinStrings } from "./crypto";
 
 export interface Logger extends Pick<Console, "debug" | "info" | "warn" | "error"> {}
 

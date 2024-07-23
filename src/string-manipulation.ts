@@ -1,5 +1,5 @@
 import { Tagged } from "type-fest";
-import { isNode, _global } from "./util";
+import { isNode, _global } from "./crypto";
 
 export type JoinStrings<
   Prefix extends string,

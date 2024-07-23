@@ -24,7 +24,7 @@ import {
   readEcKeys,
   verifyVapidAuth,
   writeEcKeys,
-} from "./util";
+} from "./crypto";
 
 type SubscriptionKeys = {
   auth: CsprngArray;

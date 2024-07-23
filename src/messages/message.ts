@@ -1,4 +1,4 @@
-import type { Guid } from "../util";
+import type { Guid } from "../crypto";
 
 export type AutoConnectServerMessage = {
   readonly messageType: "hello" | "register" | "unregister" | "broadcast" | "notification" | "ping";
