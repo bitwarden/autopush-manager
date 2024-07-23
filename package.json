@@ -1,0 +1,32 @@
+{
+  "name": "autopush-manager",
+  "version": "0.1.0",
+  "description": "A module to subscribe to Mozilla Autopush an receive notifications",
+  "main": "index.js",
+  "scripts": {
+    "build": "run-p build:*",
+    "build:main": "tsc -p tsconfig.json",
+    "build:module": "tsc -p tsconfig.module.json",
+    "lint": "eslint . --cache --cache-strategy content && prettier --check .",
+    "lint:fix:eslint": "eslint . --cache --cache-strategy content --fix",
+    "lint:fix:prettier": "prettier --cache --write .",
+    "lint:fix": "run-s lint:fix:*",
+    "lint:clear": "rimraf .eslintcache",
+    "test": "jest",
+    "test:watch": "jest --clearCache && jest --watch",
+    "test:watch:all": "jest --watchAll"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "GPL-3.0-or-later",
+  "engines": {
+    "node": "~20",
+    "npm": "~10"
+  },
+  "devDependencies": {
+    "@types/jest": "29.5.12",
+    "jest-mock-extended": "3.0.7",
+    "ts-jest": "29.2.3",
+    "type-fest": "^4.22.1"
+  }
+}

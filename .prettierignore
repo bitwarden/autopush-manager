@@ -1,0 +1,10 @@
+# Build directories
+**/build
+**/dist
+**/coverage
+.angular
+documentation.json
+storybook-static
+
+# Github Workflows
+.github/workflows
