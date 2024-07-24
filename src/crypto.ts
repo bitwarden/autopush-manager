@@ -1,23 +1,19 @@
-import {
-  CsprngArray,
-  ECKeyPair,
-  EncodedPrivateKey,
-  PrivateKey,
-  PublicKey,
-  UncompressedPublicKey,
-} from "./crypto-types";
+import { CsprngArray, ECKeyPair, EncodedPrivateKey, UncompressedPublicKey } from "./crypto-types";
 import { Storage } from "./storage";
 import { fromUrlB64ToBuffer, fromUtf8ToBuffer } from "./string-manipulation";
 import { isNode, _global } from "./util";
 
+let subtle: typeof self.crypto.subtle | typeof import("crypto").webcrypto.subtle;
 let webCrypto: typeof self.crypto;
 if (!isNode) {
   webCrypto = _global.crypto;
+  subtle = webCrypto.subtle;
 }
 
 let nodeCrypto: typeof import("crypto");
 if (isNode) {
   nodeCrypto = require("crypto");
+  subtle = nodeCrypto.webcrypto.subtle;
 }
 
 export function randomBytes(size: number): Promise<CsprngArray> {
@@ -70,47 +66,18 @@ export async function aesGcmDecrypt(
 }
 
 export async function generateEcKeys(): Promise<ECKeyPair> {
-  if (isNode) {
-    const keyCurve = nodeCrypto.createECDH("prime256v1");
-    keyCurve.generateKeys();
-    const keys = {
-      publicKey: keyCurve.getPublicKey() as PublicKey,
-      privateKey: keyCurve.getPrivateKey() as PrivateKey,
-    };
-    return Promise.resolve({
-      ...keys,
-      uncompressedPublicKey: keys.publicKey.buffer as UncompressedPublicKey,
-    });
-  } else {
-    const keys = await webCrypto.subtle.generateKey(
-      {
-        name: "ECDH",
-        namedCurve: "P-256",
-      },
-      true,
-      ["deriveKey"]
-    );
-    return {
-      ...keys,
-      uncompressedPublicKey: (await webCrypto.subtle.exportKey(
-        "raw",
-        keys.publicKey
-      )) as UncompressedPublicKey,
-    };
-  }
-}
-
-export async function extractPublicKey(
-  keys: Omit<ECKeyPair, "uncompressedPublicKey">
-): Promise<UncompressedPublicKey> {
-  if (isNode) {
-    const keyCurve = nodeCrypto.createECDH("prime256v1");
-    keyCurve.setPrivateKey(Buffer.from(keys.privateKey as Uint8Array));
-    return keyCurve.getPublicKey().buffer as UncompressedPublicKey;
-  } else {
-    const keyData = await webCrypto.subtle.exportKey("raw", keys.publicKey as CryptoKey);
-    return keyData as UncompressedPublicKey;
-  }
+  const keys = await subtle.generateKey(
+    {
+      name: "ECDH",
+      namedCurve: "P-256",
+    },
+    true,
+    ["deriveKey", "deriveBits"]
+  );
+  return {
+    ...keys,
+    uncompressedPublicKey: (await subtle.exportKey("raw", keys.publicKey)) as UncompressedPublicKey,
+  };
 }
 
 export async function writeEcKeys(
@@ -118,77 +85,52 @@ export async function writeEcKeys(
   ecKeys: ECKeyPair,
   privateKeyLocation: string
 ): Promise<void> {
-  if (isNode) {
-    const privateKey = new Uint8Array((ecKeys.privateKey as PrivateKey).buffer);
-    await storage.write(privateKeyLocation, privateKey);
-  } else {
-    const privateKey = ecKeys.privateKey as CryptoKey;
-    const jwk = await webCrypto.subtle.exportKey("jwk", privateKey);
-    await storage.write(privateKeyLocation, jwk);
-  }
+  const privateKey = ecKeys.privateKey as CryptoKey;
+  const jwk = await webCrypto.subtle.exportKey("jwk", privateKey);
+  await storage.write(privateKeyLocation, jwk);
 }
 
-export async function readEcKeys(
-  storage: Storage,
-  privateKeyLocation: string
-): Promise<ECKeyPair | null> {
-  if (isNode) {
-    const privateKey = await storage.read<Uint8Array>(privateKeyLocation);
-    if (!privateKey) {
-      return null;
-    }
-    const keyCurve = nodeCrypto.createECDH("prime256v1");
-    keyCurve.setPrivateKey(Buffer.from(privateKey));
-    const keys = {
-      publicKey: keyCurve.getPublicKey() as PublicKey,
-      privateKey: keyCurve.getPrivateKey() as PrivateKey,
-    };
-    return {
-      ...keys,
-      uncompressedPublicKey: keys.publicKey.buffer as UncompressedPublicKey,
-    };
-  } else {
-    const jwk = await storage.read<EncodedPrivateKey>(privateKeyLocation);
-    if (!jwk) {
-      return null;
-    }
-    const privateKey = await webCrypto.subtle.importKey(
-      "jwk",
-      jwk,
-      {
-        name: "ECDH",
-        namedCurve: "P-256",
-      },
-      true,
-      ["deriveKey"]
-    );
-
-    // Delete private data from the JWK
-    delete jwk.d;
-    jwk.key_ops = ["deriveKey"];
-
-    const publicKey = await webCrypto.subtle.importKey(
-      "jwk",
-      jwk,
-      {
-        name: "ECDH",
-        namedCurve: "P-256",
-      },
-      true,
-      ["deriveKey"]
-    );
-    const keys = {
-      publicKey,
-      privateKey,
-    };
-    return {
-      ...keys,
-      uncompressedPublicKey: (await webCrypto.subtle.exportKey(
-        "raw",
-        publicKey
-      )) as UncompressedPublicKey,
-    };
+export async function readEcKeys(storage: Storage, privateKeyLocation: string): Promise<ECKeyPair | null> {
+  const jwk = await storage.read<EncodedPrivateKey>(privateKeyLocation);
+  if (!jwk) {
+    return null;
   }
+  const privateKey = await webCrypto.subtle.importKey(
+    "jwk",
+    jwk,
+    {
+      name: "ECDH",
+      namedCurve: "P-256",
+    },
+    true,
+    ["deriveKey", "deriveBits"]
+  );
+
+  // Delete private data from the JWK
+  delete jwk.d;
+  jwk.key_ops = [];
+
+  const publicKey = await webCrypto.subtle.importKey(
+    "jwk",
+    jwk,
+    {
+      name: "ECDH",
+      namedCurve: "P-256",
+    },
+    true,
+    []
+  );
+  const keys = {
+    publicKey,
+    privateKey,
+  };
+  return {
+    ...keys,
+    uncompressedPublicKey: (await webCrypto.subtle.exportKey(
+      "raw",
+      publicKey
+    )) as UncompressedPublicKey,
+  };
 }
 
 // TODO: handle other auth headers
@@ -203,8 +145,14 @@ export async function verifyVapidAuth(
     return false;
   }
 
-  const t = parts.find((p) => p.startsWith("t="))?.substring(2);
-  const k = parts.find((p) => p.startsWith("k="))?.substring(2);
+  const t = parts
+    .find((p) => p.startsWith("t="))
+    ?.split(",")[0]
+    .substring(2);
+  const k = parts
+    .find((p) => p.startsWith("k="))
+    ?.split(",")[0]
+    .substring(2);
 
   if (!t || !k || t.length === 0 || k.length === 0 || k !== vapidPublicKey) {
     return false;
@@ -212,38 +160,34 @@ export async function verifyVapidAuth(
 
   const tParts = t.split(".");
 
-  if (tParts.length !== 2) {
+  if (tParts.length !== 3) {
     return false;
   }
 
-  const [unsigned, signature] = tParts;
+  const [header, body, signature] = tParts;
+  const unsigned = `${header}.${body}`;
 
-  return ecVerify(unsigned, signature, vapidPublicKey);
+  const result = await ecVerify(unsigned, signature, vapidPublicKey);
+  return result;
 }
 
 async function ecVerify(data: string, signature: string, publicKey: string): Promise<boolean> {
-  if (isNode) {
-    const verify = nodeCrypto.createVerify("ecdsa-with-SHA256");
-    verify.update(Buffer.from(data, "base64url"));
-    const publicKeyBuffer = Buffer.from(publicKey, "base64url");
-    const result = verify.verify(publicKeyBuffer, signature, "base64url");
-    return Promise.resolve(result);
-  } else {
-    const publicKeyBuffer = fromUrlB64ToBuffer(publicKey);
-    const key = await webCrypto.subtle.importKey(
-      "raw",
-      publicKeyBuffer,
-      { name: "ECDSA", namedCurve: "P-256" },
-      false,
-      ["verify"]
-    );
-    return await webCrypto.subtle.verify(
-      { name: "ECDSA", hash: { name: "SHA-256" } },
-      key,
-      fromUrlB64ToBuffer(signature),
-      fromUrlB64ToBuffer(data)
-    );
-  }
+  const subtle = isNode ? nodeCrypto.webcrypto.subtle : webCrypto.subtle;
+  const publicKeyBuffer = fromUrlB64ToBuffer(publicKey);
+  const key = await subtle.importKey(
+    "raw",
+    publicKeyBuffer,
+    { name: "ECDSA", namedCurve: "P-256" },
+    false,
+    ["verify"]
+  );
+  return await subtle.verify(
+    { name: "ECDSA", hash: { name: "SHA-256" } },
+    key,
+    fromUrlB64ToBuffer(signature),
+    fromUtf8ToBuffer(data)
+  );
+  // }
 }
 
 export async function ecdhDeriveSharedKey(
@@ -255,155 +199,78 @@ export async function ecdhDeriveSharedKey(
   contentEncryptionKey: ArrayBuffer;
   nonce: ArrayBuffer;
 }> {
-  if (isNode) {
-    const recipientPublicKey = (ecKeys.publicKey as PublicKey).buffer;
-    const senderPublicKey = fromUrlB64ToBuffer(otherPublicKey);
-    const keyCurve = nodeCrypto.createECDH("prime256");
-    keyCurve.setPrivateKey(Buffer.from(ecKeys.privateKey as Uint8Array));
+  const subtle = isNode ? nodeCrypto.webcrypto.subtle : webCrypto.subtle;
+  const recipientPublicKey = ecKeys.uncompressedPublicKey;
+  const senderPublicKey = await subtle.importKey(
+    "raw",
+    fromUrlB64ToBuffer(otherPublicKey),
+    { name: "ECDH", namedCurve: "P-256" },
+    true,
+    []
+  );
 
-    const derivedSecret = keyCurve.computeSecret(otherPublicKey, "base64url", "base64url");
-    const prk = Buffer.from(
-      nodeCrypto.hkdfSync(
-        "sha256",
-        derivedSecret,
-        Buffer.from(secret),
-        fromUtf8ToBuffer("Content-Encoding: auth\0"),
-        32
-      )
-    );
-    const contentEncryptionKey = nodeCrypto.hkdfSync(
-      "sha256",
-      prk,
-      salt,
-      createInfo("aesgcm", recipientPublicKey, senderPublicKey),
-      16
-    );
-    const nonce = nodeCrypto.hkdfSync(
-      "sha256",
-      prk,
-      salt,
-      createInfo("nonce", recipientPublicKey, senderPublicKey),
-      12
-    );
+  const derivedSecret = await subtle.deriveBits(
+    {
+      name: "ECDH",
+      public: senderPublicKey,
+    },
+    ecKeys.privateKey as CryptoKey,
+    256
+  );
 
-    return {
-      contentEncryptionKey,
-      nonce,
-    };
-  } else {
-    const recipientPublicKey = ecKeys.uncompressedPublicKey;
-    const senderPublicKey = await webCrypto.subtle.importKey(
-      "raw",
-      fromUrlB64ToBuffer(otherPublicKey),
-      { name: "ECDH", namedCurve: "P-256" },
-      true,
-      ["deriveKey"]
-    );
+  const hkdfDerivedSecret = await subtle.importKey("raw", derivedSecret, { name: "HKDF" }, false, [
+    "deriveBits",
+    "deriveKey",
+  ]);
 
-    const derivedSecret = await webCrypto.subtle.deriveKey(
-      {
-        name: "ECDH",
-        public: senderPublicKey,
-      },
-      ecKeys.privateKey as CryptoKey,
-      { name: "HKDF" },
-      false,
-      ["deriveKey"]
-    );
+  const prk = await subtle.deriveBits(
+    {
+      name: "HKDF",
+      hash: "SHA-256",
+      salt: secret,
+      info: fromUtf8ToBuffer("Content-Encoding: auth\0"),
+    },
+    hkdfDerivedSecret,
+    256
+  );
 
-    const prk = await webCrypto.subtle.deriveKey(
-      {
-        name: "HKDF",
-        hash: "SHA-256",
-        salt: secret,
-        info: fromUtf8ToBuffer("Content-Encoding: auth\0"),
-      },
-      derivedSecret,
-      { name: "HKDF" },
-      false,
-      ["deriveBits"]
-    );
+  const hdkfPrk = await subtle.importKey("raw", prk, { name: "HKDF" }, false, ["deriveBits"]);
 
-    const contentEncryptionKey = await webCrypto.subtle.deriveBits(
-      {
-        name: "HKDF",
-        hash: "SHA-256",
-        info: createInfo("aesgcm", recipientPublicKey, fromUrlB64ToBuffer(otherPublicKey)),
-        salt: fromUrlB64ToBuffer(salt),
-      },
-      prk,
-      128
-    );
+  const contentEncryptionKey = await subtle.deriveBits(
+    {
+      name: "HKDF",
+      hash: "SHA-256",
+      info: createInfo("aesgcm", recipientPublicKey, fromUrlB64ToBuffer(otherPublicKey)),
+      salt: fromUrlB64ToBuffer(salt),
+    },
+    hdkfPrk,
+    // hkdfDerivedSecret,
+    128
+  );
 
-    const nonce = await webCrypto.subtle.deriveBits(
-      {
-        name: "HKDF",
-        hash: "SHA-256",
-        info: createInfo("nonce", recipientPublicKey, fromUrlB64ToBuffer(otherPublicKey)),
-        salt: fromUrlB64ToBuffer(salt),
-      },
-      prk,
-      96
-    );
+  const nonce = await subtle.deriveBits(
+    {
+      name: "HKDF",
+      hash: "SHA-256",
+      info: createInfo("nonce", recipientPublicKey, fromUrlB64ToBuffer(otherPublicKey)),
+      salt: fromUrlB64ToBuffer(salt),
+    },
+    hdkfPrk,
+    // hkdfDerivedSecret,
+    96
+  );
 
-    return {
-      contentEncryptionKey,
-      nonce,
-    };
-  }
+  return {
+    contentEncryptionKey,
+    nonce,
+  };
 }
 
-function createInfo(type: string, clientPublicKey: ArrayBuffer, serverPublicKey: ArrayBuffer) {
-  return isNode
-    ? nodeCreateInfo(type, clientPublicKey, serverPublicKey)
-    : webCreateInfo(type, clientPublicKey, serverPublicKey);
-}
-
-// https://developer.chrome.com/blog/web-push-encryption/#deriving_the_encryption_parameters
-function nodeCreateInfo(type: string, clientPublicKey: ArrayBuffer, serverPublicKey: ArrayBuffer) {
-  const len = type.length;
-  const clientPublicKeyBuffer = Buffer.from(clientPublicKey);
-  const serverPublicKeyBuffer = Buffer.from(serverPublicKey);
-
-  // The start index for each element within the buffer is:
-  // value               | length | start    |
-  // -----------------------------------------
-  // 'Content-Encoding: '| 18     | 0        |
-  // type                | len    | 18       |
-  // nul byte            | 1      | 18 + len |
-  // 'P-256'             | 5      | 19 + len |
-  // nul byte            | 1      | 24 + len |
-  // client key length   | 2      | 25 + len |
-  // client key          | 65     | 27 + len |
-  // server key length   | 2      | 92 + len |
-  // server key          | 65     | 94 + len |
-  // For the purposes of push encryption the length of the keys will
-  // always be 65 bytes.
-  const info = Buffer.alloc(18 + len + 1 + 5 + 1 + 2 + 65 + 2 + 65);
-
-  // The string 'Content-Encoding: ', as utf-8
-  info.write("Content-Encoding: ");
-  // The 'type' of the record, a utf-8 string
-  info.write(type, 18);
-  // A single null-byte
-  info.write("\0", 18 + len);
-  // The string 'P-256', declaring the elliptic curve being used
-  info.write("P-256", 19 + len);
-  // A single null-byte
-  info.write("\0", 24 + len);
-  // The length of the client's public key as a 16-bit integer
-  info.writeUInt16BE(clientPublicKeyBuffer.length, 25 + len);
-  // Now the actual client public key
-  clientPublicKeyBuffer.copy(info, 27 + len);
-  // Length of our public key
-  info.writeUInt16BE(serverPublicKeyBuffer.length, 92 + len);
-  // The key itself
-  serverPublicKeyBuffer.copy(info, 94 + len);
-
-  return info;
-}
-
-function webCreateInfo(type: string, clientPublicKey: ArrayBuffer, serverPublicKey: ArrayBuffer) {
+function createInfo(
+  type: string,
+  clientPublicKey: ArrayBuffer,
+  serverPublicKey: ArrayBuffer
+): Uint8Array {
   const len = type.length;
   const clientPublicKeyBuffer = new Uint8Array(clientPublicKey);
   const serverPublicKeyBuffer = new Uint8Array(serverPublicKey);

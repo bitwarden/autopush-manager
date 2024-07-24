@@ -56,11 +56,11 @@ export function fromUrlB64ToB64(urlB64Str: string): string {
   return output;
 }
 
-export function fromUrlB64ToBuffer(urlB64: string): ArrayBuffer {
-  return fromB64ToBuffer(fromUrlB64ToB64(urlB64));
+export function fromUrlB64ToBuffer(urlB64: string): Uint8Array {
+  return new Uint8Array(fromB64ToBuffer(fromUrlB64ToB64(urlB64)));
 }
 
-export function fromB64ToBuffer(b64: string): ArrayBuffer {
+export function fromB64ToBuffer(b64: string): Uint8Array {
   if (isNode) {
     return Buffer.from(b64, "base64");
   } else {
@@ -69,7 +69,7 @@ export function fromB64ToBuffer(b64: string): ArrayBuffer {
     for (let i = 0; i < binary.length; i++) {
       bytes[i] = binary.charCodeAt(i);
     }
-    return bytes.buffer;
+    return bytes;
   }
 }
 
