@@ -3,6 +3,7 @@ import { Guid } from "../../string-manipulation";
 import { UnregisterHandler } from "../handlers/unregister-handler";
 import { ClientUnregister, ClientUnregisterCode } from "../message";
 import { MessageMediator } from "../message-mediator";
+
 import { MessageSender } from "./message-sender";
 
 type UnregisterDependencies = { readonly channelId: Guid; readonly code: ClientUnregisterCode };

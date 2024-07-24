@@ -1,19 +1,19 @@
 import { Logger, NamespacedLogger } from "./logger";
-import { Storage } from "./storage";
+import { RegisterHandler } from "./messages/handlers/register-handler";
+import { UnregisterHandler } from "./messages/handlers/unregister-handler";
+import { ClientUnregisterCodes } from "./messages/message";
+import { MessageMediator } from "./messages/message-mediator";
+import { HelloSender } from "./messages/senders/hello-sender";
+import { RegisterSender } from "./messages/senders/register-sender";
+import { UnregisterSender } from "./messages/senders/unregister-sender";
 import {
   PublicPushSubscription,
   PushSubscription,
   PushSubscriptionOptions,
 } from "./push-subscription";
+import { Storage } from "./storage";
 import { Guid } from "./string-manipulation";
 import { SubscriptionHandler } from "./subscription-manager";
-import { MessageMediator } from "./messages/message-mediator";
-import { HelloSender } from "./messages/senders/hello-sender";
-import { RegisterSender } from "./messages/senders/register-sender";
-import { UnregisterSender } from "./messages/senders/unregister-sender";
-import { ClientUnregisterCodes } from "./messages/message";
-import { UnregisterHandler } from "./messages/handlers/unregister-handler";
-import { RegisterHandler } from "./messages/handlers/register-handler";
 
 export interface PublicPushManager {
   subscribe(options: PushSubscriptionOptions): Promise<PublicPushSubscription>;
@@ -81,7 +81,7 @@ export class PushManager implements PublicPushManager {
     await promise;
   }
 
-  public static async create(storage: Storage, logger: Logger) {
+  static async create(storage: Storage, logger: Logger) {
     const manager = new PushManager(storage, logger);
     const subscriptionHandler = await SubscriptionHandler.create(
       storage,
@@ -105,12 +105,12 @@ export class PushManager implements PublicPushManager {
     }
   }
 
-  public async shutdown() {
+  async shutdown() {
     this.reconnect = false;
     this._websocket?.close();
   }
 
-  public async destroy() {
+  async destroy() {
     await this.shutdown();
   }
 
@@ -122,7 +122,7 @@ export class PushManager implements PublicPushManager {
     this._websocket = new WebSocket("wss://push.services.mozilla.com");
     this._websocket.onmessage = async (event) => {
       this.logger.debug("Received ws message", event);
-      this.mediator.handle(event.data);
+      await this.mediator.handle(event.data);
     };
     this._websocket.onopen = async () => {
       this.wsOpenTime = new Date().getTime();
@@ -130,7 +130,7 @@ export class PushManager implements PublicPushManager {
     };
     this._websocket.onclose = async () => {
       this._websocket = null;
-      const timeOpen = new Date().getTime() - this.wsOpenTime!;
+      const timeOpen = this.wsOpenTime == null ? 0 : new Date().getTime() - this.wsOpenTime;
       this.wsOpenTime = null;
       this.logger.debug(
         `WebSocket connection closed. Connection open for ${timeOpen / 1000} seconds`

@@ -1,5 +1,6 @@
-import JSDOMEnvironment from "jest-environment-jsdom";
 import { TextEncoder, TextDecoder } from "util";
+
+import JSDOMEnvironment from "jest-environment-jsdom";
 
 /**
  * Maps Node's APIs to the jsdom global object to work around

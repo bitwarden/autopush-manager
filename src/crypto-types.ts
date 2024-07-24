@@ -1,4 +1,4 @@
-import { Tagged } from "type-fest";
+import type { Tagged } from "type-fest";
 
 export type CsprngArray = Tagged<Uint8Array, "CsprngArray">;
 export type ECKeyPair = {

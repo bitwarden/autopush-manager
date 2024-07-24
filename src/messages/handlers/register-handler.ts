@@ -1,15 +1,16 @@
+import { EventManager } from "../../event-manager";
 import { NamespacedLogger } from "../../logger";
-import { AutoConnectServerMessage, ClientUnregisterCodes, ServerRegister } from "../message";
 import { PushSubscriptionOptions, PushSubscription } from "../../push-subscription";
-import { MessageMediator } from "../message-mediator";
-import { MessageHandler } from "./message-handler";
 import { Guid } from "../../string-manipulation";
+import { AutoConnectServerMessage, ClientUnregisterCodes, ServerRegister } from "../message";
+import { MessageMediator } from "../message-mediator";
 import { RegisterSender } from "../senders/register-sender";
 import { UnregisterSender } from "../senders/unregister-sender";
-import { EventManager } from "../../event-manager";
+
+import { MessageHandler } from "./message-handler";
 
 export class RegisterHandler implements MessageHandler<ServerRegister> {
-  private readonly registeringQueue: Record<Guid, PushSubscriptionOptions> = {};
+  private readonly registeringQueue: Map<Guid, PushSubscriptionOptions> = new Map();
   private readonly eventManager: EventManager<{
     registered: (subscription: PushSubscription<Guid>, channelId: Guid) => void;
   }>;
@@ -30,11 +31,11 @@ export class RegisterHandler implements MessageHandler<ServerRegister> {
    */
   expectRegister(channelId: Guid, options: PushSubscriptionOptions) {
     this.logger.debug("Expecting register", { channelId, options });
-    this.registeringQueue[channelId] = options;
+    this.registeringQueue.set(channelId, options);
 
     // If we don't get a registration in 60 seconds, clean up the queue
     setTimeout(() => {
-      delete this.registeringQueue[channelId];
+      this.registeringQueue.delete(channelId);
     }, 60_000);
   }
 
@@ -46,17 +47,14 @@ export class RegisterHandler implements MessageHandler<ServerRegister> {
         break;
       case 409: {
         this.logger.error("Conflict on register. Retrying", message);
-        const options = this.registeringQueue[message.channelId];
-        delete this.registeringQueue[message.channelId];
-        await this.mediator.send(RegisterSender, { options });
+        await this.retryRegister(message.channelId, 0);
         return;
       }
       case 500: {
         // FIXME: what's an appropriate retry strategy here?
         this.logger.error("Server error on register, retrying in 60 seconds", message);
-        const options = this.registeringQueue[message.channelId];
-        delete this.registeringQueue[message.channelId];
-        setTimeout(() => this.mediator.send(RegisterSender, { options }), 60_000);
+        // FIXME: do we want to await the retry?
+        void this.retryRegister(message.channelId, 60_000);
         return;
       }
       default: {
@@ -65,7 +63,7 @@ export class RegisterHandler implements MessageHandler<ServerRegister> {
       }
     }
 
-    const options = this.registeringQueue[message.channelId];
+    const options = this.registeringQueue.get(message.channelId);
     if (!options) {
       this.logger.error("No options found for channelId, unregistering", message);
       // Clean up the registration we can't complete
@@ -76,7 +74,7 @@ export class RegisterHandler implements MessageHandler<ServerRegister> {
       return;
     }
     this.logger.debug("Removing expected registration from queue", message.channelId);
-    delete this.registeringQueue[message.channelId];
+    this.registeringQueue.delete(message.channelId);
 
     const subscription = await this.mediator.subscriptionHandler.addSubscription(
       message.channelId,
@@ -99,5 +97,23 @@ export class RegisterHandler implements MessageHandler<ServerRegister> {
         }
       });
     });
+  }
+
+  private async retryRegister(channelId: Guid, timeoutMs: number) {
+    const options = this.registeringQueue.get(channelId);
+    if (!options) {
+      this.logger.error("No options found for channelId, cannot retry", channelId);
+      return;
+    }
+    this.logger.debug("Retrying register", { channelId, options });
+    const send = () => this.mediator.send(RegisterSender, { options });
+    return timeoutMs <= 0
+      ? await send()
+      : new Promise<void>((resolve) =>
+          setTimeout(async () => {
+            await send();
+            resolve();
+          }, timeoutMs)
+        );
   }
 }

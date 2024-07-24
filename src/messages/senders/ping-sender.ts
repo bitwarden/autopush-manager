@@ -1,10 +1,11 @@
 import { NamespacedLogger } from "../../logger";
 import { ClientPing } from "../message";
-import { MessageSender } from "./message-sender";
+
+import { MessageSender, UnknownDeps } from "./message-sender";
 
 const MIN_PING_DELAY_MS = 1_800_000; // 30 minutes
 
-export class PingSender implements MessageSender<ClientPing, {}> {
+export class PingSender implements MessageSender<ClientPing, UnknownDeps> {
   private lastPingTime: number | null = null;
   constructor(private readonly logger: NamespacedLogger<"PingSender">) {}
 

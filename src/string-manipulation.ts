@@ -1,4 +1,5 @@
-import { Tagged } from "type-fest";
+import type { Tagged } from "type-fest";
+
 import { isNode, _global } from "./util";
 
 export type JoinStrings<

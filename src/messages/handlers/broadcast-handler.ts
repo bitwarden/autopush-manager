@@ -1,5 +1,6 @@
 import { NamespacedLogger } from "../../logger";
 import { AutoConnectServerMessage, ServerBroadcast } from "../message";
+
 import { MessageHandler } from "./message-handler";
 
 export class BroadcastHandler implements MessageHandler<ServerBroadcast> {

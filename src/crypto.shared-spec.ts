@@ -1,3 +1,5 @@
+import { TestStorage } from "../spec/test-storage";
+
 import {
   aesGcmDecrypt,
   ecdhDeriveSharedKey,
@@ -8,7 +10,6 @@ import {
   writeEcKeys,
 } from "./crypto";
 import { fromBufferToUrlB64, fromBufferToUtf8 } from "./string-manipulation";
-import { TestStorage } from "../spec/test-storage";
 
 describe("randomBytes", () => {
   it("returns a buffer of the specified length", async () => {
@@ -75,11 +76,13 @@ describe("readEcKeys", () => {
     await writeEcKeys(storage, keys, privateKeyLocation);
     const readKeys = await readEcKeys(storage, privateKeyLocation);
 
-    expect(readKeys).not.toBeNull();
+    if (readKeys === null) {
+      fail("readKeys is null");
+    }
 
-    await writeEcKeys(storage, readKeys!, "test2");
+    await writeEcKeys(storage, readKeys, "test2");
 
-    expect(storage.store["test2"]).toEqualBuffer(storage.store[privateKeyLocation] as any);
+    expect(storage.store["test2"]).toEqualBuffer(storage.store[privateKeyLocation] as ArrayBuffer);
   });
 });
 
@@ -111,8 +114,10 @@ describe("ecdhDeriveSharedKey", () => {
       61, 222, 177, 105, 70, 150, 45, 212, 238, 129, 62, 121, 29, 29, 181, 81, 11, 242, 181, 219,
       56, 159, 236, 125,
     ]);
-    const localKeys = (await readEcKeys(storage, "privateKey"))!;
-    expect(localKeys).not.toBeNull();
+    const localKeys = await readEcKeys(storage, "privateKey");
+    if (localKeys === null) {
+      fail("localKeys is null");
+    }
     const secret = new Uint8Array(16);
     // TODO: convert to string
     const senderKey = fromBufferToUrlB64(publicKey.buffer);

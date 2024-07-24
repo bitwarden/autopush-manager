@@ -1,6 +1,7 @@
 import { NamespacedLogger } from "../../logger";
 import { Guid } from "../../string-manipulation";
 import { ClientHello } from "../message";
+
 import { MessageSender } from "./message-sender";
 
 type HelloDependencies = { readonly uaid: string | null; readonly channelIds: Guid[] };

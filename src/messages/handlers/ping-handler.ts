@@ -1,5 +1,6 @@
 import { NamespacedLogger } from "../../logger";
 import { AutoConnectServerMessage, ServerPing } from "../message";
+
 import { MessageHandler } from "./message-handler";
 
 export class PingHandler implements MessageHandler<ServerPing> {

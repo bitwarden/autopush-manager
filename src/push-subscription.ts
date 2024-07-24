@@ -1,4 +1,13 @@
 import {
+  aesGcmDecrypt,
+  ecdhDeriveSharedKey,
+  generateEcKeys,
+  randomBytes,
+  readEcKeys,
+  verifyVapidAuth,
+  writeEcKeys,
+} from "./crypto";
+import {
   CsprngArray,
   ECKeyPair,
   EncodedSymmetricKey,
@@ -16,15 +25,6 @@ import {
   fromB64ToBuffer,
   fromBufferToUrlB64,
 } from "./string-manipulation";
-import {
-  aesGcmDecrypt,
-  ecdhDeriveSharedKey,
-  generateEcKeys,
-  randomBytes,
-  readEcKeys,
-  verifyVapidAuth,
-  writeEcKeys,
-} from "./crypto";
 
 type SubscriptionKeys = {
   auth: CsprngArray;
@@ -70,11 +70,11 @@ type PushSubscriptionEvents = {
 
 export class PushSubscription<const TChannelId extends Guid> implements PublicPushSubscription {
   private readonly eventManager: EventManager<PushSubscriptionEvents>;
-  public constructor(
+  constructor(
     private readonly storage: NamespacedStorage<TChannelId>,
     private readonly endpoint: URL,
     private readonly keys: SubscriptionKeys,
-    public readonly options: PushSubscriptionOptions,
+    readonly options: PushSubscriptionOptions,
     private readonly unsubscribeCallback: () => Promise<void>,
     private readonly logger: NamespacedLogger<JoinStrings<string, TChannelId>>
   ) {
@@ -94,14 +94,14 @@ export class PushSubscription<const TChannelId extends Guid> implements PublicPu
    * @throws {ClientAckCodes.DECRYPT_FAIL} if the message contains data, but is missing headers required to decrypt
    * @throws {ClientAckCodes.DECRYPT_FAIL} if message data decryption fails
    */
-  public async handleNotification(message: ServerNotification) {
+  async handleNotification(message: ServerNotification) {
     this.logger.debug("Handling notification", message);
 
     // FIXME: Do we need to validate authorization, or is this handled by autopush?
     if (
       !message.headers ||
       !message.headers["Authorization"] ||
-      !verifyVapidAuth(this.options.applicationServerKey, message.headers["Authorization"])
+      !(await verifyVapidAuth(this.options.applicationServerKey, message.headers["Authorization"]))
     ) {
       throw ClientAckCodes.OTHER_FAIL;
     }
@@ -159,7 +159,7 @@ export class PushSubscription<const TChannelId extends Guid> implements PublicPu
     this.logger.debug("Handled notification", message);
   }
 
-  public static async create<const T extends Guid>(
+  static async create<const T extends Guid>(
     storage: NamespacedStorage<T>,
     endpoint: string,
     options: PushSubscriptionOptions,
@@ -182,7 +182,7 @@ export class PushSubscription<const TChannelId extends Guid> implements PublicPu
     return new PushSubscription(storage, urlEndpoint, keys, options, unsubscribeCallback, logger);
   }
 
-  public static async recover<const T extends Guid>(
+  static async recover<const T extends Guid>(
     storage: NamespacedStorage<T>,
     unsubscribeCallback: () => Promise<void>,
     logger: NamespacedLogger<JoinStrings<string, T>>
@@ -211,7 +211,7 @@ export class PushSubscription<const TChannelId extends Guid> implements PublicPu
     );
   }
 
-  public async destroy() {
+  async destroy() {
     for (const key of Object.values(STORAGE_KEYS)) {
       await this.storage.remove(key);
     }

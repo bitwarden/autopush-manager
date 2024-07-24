@@ -1,8 +1,9 @@
 import { NamespacedLogger } from "../../logger";
 import { AutoConnectServerMessage, ServerHello } from "../message";
-import { MessageHandler } from "./message-handler";
 import { MessageMediator } from "../message-mediator";
 import { PingSender } from "../senders/ping-sender";
+
+import { MessageHandler } from "./message-handler";
 
 export class HelloHandler implements MessageHandler<ServerHello> {
   constructor(

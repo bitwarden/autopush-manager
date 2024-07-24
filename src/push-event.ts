@@ -1,5 +1,7 @@
+import type { JsonObject } from "type-fest";
+
 export class PushEvent {
-  constructor(public readonly data: PushMessageData) {}
+  constructor(readonly data: PushMessageData) {}
 }
 
 export class PushMessageData {
@@ -9,7 +11,7 @@ export class PushMessageData {
     return new TextDecoder("utf-8").decode(this.data);
   }
 
-  json(): any {
+  json(): JsonObject {
     return JSON.parse(this.text());
   }
 

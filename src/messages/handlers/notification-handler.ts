@@ -6,6 +6,7 @@ import {
   AutoConnectServerMessage,
 } from "../message";
 import { MessageMediator } from "../message-mediator";
+
 import { MessageHandler } from "./message-handler";
 
 export class NotificationHandler implements MessageHandler<ServerNotification> {

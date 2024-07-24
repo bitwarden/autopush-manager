@@ -1,29 +1,31 @@
-import { Tagged } from "type-fest";
+import type { Tagged } from "type-fest";
+
 import { NamespacedLogger } from "./logger";
 import { Guid, JoinStrings, newGuid } from "./string-manipulation";
 
-type EventCallback = (...args: any[]) => void;
+type EventCallback = (...args: unknown[]) => void;
 type EventMap = { [eventName: string]: EventCallback };
 export type ListenerId = Tagged<Guid, "ListenerId">;
 
+type CallbackMap<TEventMap extends EventMap> = {
+  [eventName in keyof TEventMap]: Map<ListenerId, TEventMap[eventName]>;
+};
 export class EventManager<const TEventMap extends EventMap> {
-  private readonly callbacks: {
-    [eventName in keyof TEventMap]: Record<ListenerId, TEventMap[eventName]>;
-  } = {} as any;
+  private readonly callbacks: CallbackMap<TEventMap> = {} as CallbackMap<TEventMap>;
   constructor(private readonly logger: NamespacedLogger<JoinStrings<string, "EventManager">>) {}
 
-  public addEventListener<const TEvent extends keyof TEventMap>(
+  addEventListener<const TEvent extends keyof TEventMap>(
     event: TEvent,
     callback: TEventMap[TEvent]
   ): ListenerId {
     this.logger.debug("Adding event listener", event);
     const callBackId = newGuid<ListenerId>();
 
-    this.callbacksFor(event)[callBackId] = callback;
+    this.callbacksFor(event).set(callBackId, callback);
     return callBackId;
   }
 
-  public dispatchEvent<const TEvent extends keyof TEventMap>(
+  dispatchEvent<const TEvent extends keyof TEventMap>(
     event: TEvent,
     ...args: Parameters<TEventMap[TEvent]>
   ) {
@@ -34,16 +36,16 @@ export class EventManager<const TEventMap extends EventMap> {
     }
   }
 
-  public removeEventListener(event: keyof TEventMap, callbackId: ListenerId) {
+  removeEventListener(event: keyof TEventMap, callbackId: ListenerId) {
     this.logger.debug("Removing event listener", event);
-    delete this.callbacksFor(event)[callbackId];
+    this.callbacksFor(event).delete(callbackId);
   }
 
-  private callbacksFor(event: keyof TEventMap): Record<ListenerId, TEventMap[keyof TEventMap]> {
+  private callbacksFor(event: keyof TEventMap): Map<ListenerId, TEventMap[keyof TEventMap]> {
     if (!this.callbacks[event]) {
-      this.callbacks[event] = {};
+      this.callbacks[event] = new Map();
     }
 
-    return this.callbacks[event] as Record<ListenerId, TEventMap[keyof TEventMap]>;
+    return this.callbacks[event] as Map<ListenerId, TEventMap[keyof TEventMap]>;
   }
 }

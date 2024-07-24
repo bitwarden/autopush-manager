@@ -1,17 +1,17 @@
 import { NamespacedLogger } from "./logger";
-import { NamespacedStorage, Storage } from "./storage";
 import { PushSubscription, PushSubscriptionOptions } from "./push-subscription";
+import { NamespacedStorage, Storage } from "./storage";
 import { Guid } from "./string-manipulation";
 
 export class SubscriptionHandler {
-  private subscriptions: Record<Guid, PushSubscription<Guid>> = {};
+  private readonly subscriptions: Map<Guid, PushSubscription<Guid>> = new Map();
   private constructor(
     private readonly storage: Storage,
     private readonly unsubscribeCallback: (channelId: Guid) => Promise<void>,
     private readonly logger: NamespacedLogger<"SubscriptionHandler">
   ) {}
 
-  public static async create(
+  static async create(
     storage: Storage,
     unsubscribeCallback: (channelId: Guid) => Promise<void>,
     logger: NamespacedLogger<"SubscriptionHandler">
@@ -21,7 +21,7 @@ export class SubscriptionHandler {
     return handler;
   }
 
-  public async addSubscription<TChannelId extends Guid>(
+  async addSubscription<TChannelId extends Guid>(
     channelId: TChannelId,
     endpoint: string,
     options: PushSubscriptionOptions
@@ -36,46 +36,44 @@ export class SubscriptionHandler {
       () => this.unsubscribeCallback(channelId),
       this.logger.extend(channelId)
     );
-    this.subscriptions[channelId] = subscription;
-    this.writeChannelIds();
+    this.subscriptions.set(channelId, subscription);
+    await this.writeChannelIds();
     this.logger.debug("Added subscription", { channelId, endpoint, options });
     return subscription;
   }
 
-  public get channelIds() {
+  get channelIds() {
     return Object.keys(this.subscriptions) as Guid[];
   }
 
-  public get(channelId: Guid) {
-    const sub = this.subscriptions[channelId];
+  get(channelId: Guid) {
+    const sub = this.subscriptions.get(channelId);
     if (!sub) {
       throw new Error("Subscription not found");
     }
     return sub;
   }
 
-  public getByApplicationServerKey(
-    applicationServerKey: string
-  ): PushSubscription<Guid> | undefined {
+  getByApplicationServerKey(applicationServerKey: string): PushSubscription<Guid> | undefined {
     return Object.values(this.subscriptions).find(
       (sub) => sub.options.applicationServerKey === applicationServerKey
     );
   }
 
-  public async removeSubscription(channelId: Guid) {
+  async removeSubscription(channelId: Guid) {
     this.logger.debug("Removing subscription", channelId);
-    const subscription = this.subscriptions[channelId];
+    const subscription = this.subscriptions.get(channelId);
     if (!subscription) {
       this.logger.warn("Subscription not found", channelId);
       return;
     }
     await subscription.destroy();
-    delete this.subscriptions[channelId];
-    this.writeChannelIds();
+    this.subscriptions.delete(channelId);
+    await this.writeChannelIds();
     this.logger.debug("Removed subscription", channelId);
   }
 
-  public async removeAllSubscriptions() {
+  async removeAllSubscriptions() {
     for (const channelId of Object.keys(this.subscriptions)) {
       const guid = channelId as Guid;
       await this.removeSubscription(guid);
@@ -96,7 +94,7 @@ export class SubscriptionHandler {
           () => this.unsubscribeCallback(guid),
           this.logger.extend(guid)
         );
-        this.subscriptions[guid] = subscription;
+        this.subscriptions.set(guid, subscription);
       } catch (e) {
         this.logger.error("Failed to recover subscription", e);
       }

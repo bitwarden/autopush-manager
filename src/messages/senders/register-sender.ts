@@ -1,10 +1,11 @@
-import { ClientRegister } from "../message";
 import { NamespacedLogger } from "../../logger";
-import { MessageSender } from "./message-sender";
-import { MessageMediator } from "../message-mediator";
 import { PushSubscriptionOptions } from "../../push-subscription";
 import { newGuid } from "../../string-manipulation";
 import { RegisterHandler } from "../handlers/register-handler";
+import { ClientRegister } from "../message";
+import { MessageMediator } from "../message-mediator";
+
+import { MessageSender } from "./message-sender";
 
 type RegisterDeps = { readonly options: PushSubscriptionOptions };
 export class RegisterSender implements MessageSender<ClientRegister, RegisterDeps> {
@@ -13,7 +14,7 @@ export class RegisterSender implements MessageSender<ClientRegister, RegisterDep
     private readonly logger: NamespacedLogger<"RegisterSender">
   ) {}
 
-  public async buildMessage(deps: RegisterDeps): Promise<ClientRegister> {
+  async buildMessage(deps: RegisterDeps): Promise<ClientRegister> {
     if (!this.mediator.pushManager.uaid) {
       throw new Error("Hello not completed. Try again later");
     }

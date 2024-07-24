@@ -21,7 +21,7 @@ export class NamespacedLogger<const TNamespace extends string> implements Logger
     this.logger.error(`[${this.namespace}] ${message}`, ...args);
   }
 
-  public extend<const TExtend extends string>(namespace: TExtend) {
+  extend<const TExtend extends string>(namespace: TExtend) {
     return new NamespacedLogger<JoinStrings<TNamespace, TExtend>>(
       this.logger,
       `${this.namespace}:${namespace}`

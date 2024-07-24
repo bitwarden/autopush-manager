@@ -1,36 +1,38 @@
-import { Constructor } from "type-fest";
-import { HelloHandler } from "./handlers/hello-handler";
-import { AutoConnectClientMessage, AutoConnectServerMessage, ClientMessageAck } from "./message";
-import { MessageHandler } from "./handlers/message-handler";
-import { MessageSender, UnknownDeps } from "./senders/message-sender";
+import type { Constructor } from "type-fest";
+
 import { Logger, NamespacedLogger } from "../logger";
-import { PingSender } from "./senders/ping-sender";
 import { PushManager } from "../push-manager";
 import { SubscriptionHandler } from "../subscription-manager";
-import { HelloSender } from "./senders/hello-sender";
-import { RegisterHandler } from "./handlers/register-handler";
-import { UnregisterHandler } from "./handlers/unregister-handler";
+
 import { BroadcastHandler } from "./handlers/broadcast-handler";
+import { HelloHandler } from "./handlers/hello-handler";
+import { MessageHandler } from "./handlers/message-handler";
 import { NotificationHandler } from "./handlers/notification-handler";
 import { PingHandler } from "./handlers/ping-handler";
+import { RegisterHandler } from "./handlers/register-handler";
+import { UnregisterHandler } from "./handlers/unregister-handler";
+import { AutoConnectClientMessage, AutoConnectServerMessage, ClientMessageAck } from "./message";
+import { AckSender } from "./senders/ack-sender";
+import { BroadcastSubscribeSender } from "./senders/broadcast-subscribe-sender";
+import { HelloSender } from "./senders/hello-sender";
+import { MessageSender, UnknownDeps } from "./senders/message-sender";
+import { NackSender } from "./senders/nack-sender";
+import { PingSender } from "./senders/ping-sender";
 import { RegisterSender } from "./senders/register-sender";
 import { UnregisterSender } from "./senders/unregister-sender";
-import { AckSender } from "./senders/ack-sender";
-import { NackSender } from "./senders/nack-sender";
-import { BroadcastSubscribeSender } from "./senders/broadcast-subscribe-sender";
 
 const ACK_INTERVAL = 30_000; // 30 seconds
 
 export class MessageMediator {
   private handlers: MessageHandler<AutoConnectServerMessage>[];
-  // TODO: get rid of this any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TODO: get rid of this any
   private senders: MessageSender<AutoConnectClientMessage, any>[];
   private ackInterval: NodeJS.Timeout | null = null;
   private ackQueue: ClientMessageAck[] = [];
   private ackSender: AckSender;
   constructor(
-    public readonly pushManager: PushManager,
-    public readonly subscriptionHandler: SubscriptionHandler,
+    readonly pushManager: PushManager,
+    readonly subscriptionHandler: SubscriptionHandler,
     private readonly logger: Logger
   ) {
     this.handlers = [
@@ -55,7 +57,7 @@ export class MessageMediator {
     this.ackInterval = setInterval(() => this.sendAck(), ACK_INTERVAL);
   }
 
-  public destroy() {
+  destroy() {
     if (this.ackInterval) {
       clearInterval(this.ackInterval);
     }
@@ -66,7 +68,10 @@ export class MessageMediator {
    * @param type The type of sender to get
    * @returns The registered sender or null if not found
    */
-  public getSender<T extends MessageSender<any, any>>(type: Constructor<T>): T | null {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- this any is enforced by the type constraints on the class and needed for the `send` method to work
+  getSender<T extends MessageSender<AutoConnectClientMessage, any>>(
+    type: Constructor<T>
+  ): T | null {
     return this.senders.find((sender) => sender instanceof type) as T | null;
   }
 
@@ -75,13 +80,11 @@ export class MessageMediator {
    * @param type The type of handler to get
    * @returns the first registered handler of the given type or null if not found
    */
-  public getHandler<T extends MessageHandler<AutoConnectServerMessage>>(
-    type: Constructor<T>
-  ): T | null {
+  getHandler<T extends MessageHandler<AutoConnectServerMessage>>(type: Constructor<T>): T | null {
     return this.handlers.find((handler) => handler instanceof type) as T | null;
   }
 
-  public async handle(message: AutoConnectServerMessage): Promise<void> {
+  async handle(message: AutoConnectServerMessage): Promise<void> {
     const handler = this.handlers.find((h) => h.handlesMessage(message));
     if (!handler) {
       this.logger.error(`No handler found for ${message.messageType}`);
@@ -98,7 +101,7 @@ export class MessageMediator {
    *
    * @throws Error if no sender is found for the given type
    */
-  async send<T extends MessageSender<any, TDeps>, TDeps extends UnknownDeps>(
+  async send<T extends MessageSender<AutoConnectClientMessage, TDeps>, TDeps extends UnknownDeps>(
     type: Constructor<T>,
     deps: TDeps
   ): Promise<void> {
