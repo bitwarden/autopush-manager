@@ -59,7 +59,10 @@ describe("writeEcKeys", () => {
     const keys = await generateEcKeys();
     const privateKeyLocation = "test";
     await writeEcKeys(storage, keys, privateKeyLocation);
-    const jwk = storage.store[privateKeyLocation] as JsonWebKey;
+    const jwk = await storage.read<JsonWebKey>(privateKeyLocation);
+    if (jwk === null) {
+      fail("jwk is null");
+    }
     expect(jwk.kty).toEqual("EC");
     expect(jwk.crv).toEqual("P-256");
     expect(jwk.d).toEqual(expect.any(String));
@@ -82,7 +85,9 @@ describe("readEcKeys", () => {
 
     await writeEcKeys(storage, readKeys, "test2");
 
-    expect(storage.store["test2"]).toEqualBuffer(storage.store[privateKeyLocation] as ArrayBuffer);
+    expect(storage.store.get("test2") as JsonWebKey).toEqual(
+      storage.store.get(privateKeyLocation) as ArrayBuffer,
+    );
   });
 });
 
@@ -99,7 +104,7 @@ describe("VerifyVapidAuth", () => {
 describe("ecdhDeriveSharedKey", () => {
   it("derives a shared key", async () => {
     const storage = new TestStorage();
-    storage.store["privateKey"] = {
+    storage.store.set("privateKey", {
       key_ops: ["deriveKey", "deriveBits"],
       ext: true,
       kty: "EC",
@@ -107,7 +112,7 @@ describe("ecdhDeriveSharedKey", () => {
       y: "cZCKmCjy4grDsBrGXkpUikHv2VZmen8SRmclj244OtY",
       crv: "P-256",
       d: "EZdq8BiFjHbl6U6F0iK0yF8nXvw8-6mGjto9E_2fpwo",
-    };
+    });
     const publicKey = new Uint8Array([
       4, 212, 7, 72, 118, 252, 190, 220, 245, 154, 52, 177, 252, 15, 23, 133, 156, 239, 180, 143,
       238, 35, 90, 17, 113, 37, 51, 202, 227, 65, 216, 90, 65, 164, 147, 8, 238, 157, 148, 51, 109,
@@ -125,10 +130,10 @@ describe("ecdhDeriveSharedKey", () => {
 
     const sharedKeys = await ecdhDeriveSharedKey(localKeys, secret, senderKey, salt);
     expect(sharedKeys.contentEncryptionKey).toEqualBuffer(
-      new Uint8Array([48, 0, 223, 95, 172, 79, 172, 31, 184, 11, 61, 5, 68, 120, 86, 62])
+      new Uint8Array([48, 0, 223, 95, 172, 79, 172, 31, 184, 11, 61, 5, 68, 120, 86, 62]),
     );
     expect(sharedKeys.nonce).toEqualBuffer(
-      new Uint8Array([201, 196, 98, 239, 12, 215, 67, 233, 119, 119, 11, 191])
+      new Uint8Array([201, 196, 98, 239, 12, 215, 67, 233, 119, 119, 11, 191]),
     );
   });
 });

@@ -5,7 +5,7 @@ import { isNode, _global } from "./util";
 export type JoinStrings<
   Prefix extends string,
   Suffix extends string,
-  Join extends string = ":"
+  Join extends string = ":",
 > = `${Prefix}${Join}${Suffix}`;
 
 // ref: http://stackoverflow.com/a/2117523/1090359

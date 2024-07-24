@@ -12,7 +12,7 @@ import { MessageHandler } from "./message-handler";
 export class NotificationHandler implements MessageHandler<ServerNotification> {
   constructor(
     private readonly mediator: MessageMediator,
-    private readonly logger: NamespacedLogger<"NotificationHandler">
+    private readonly logger: NamespacedLogger<"NotificationHandler">,
   ) {}
 
   handlesMessage(message: AutoConnectServerMessage): boolean {

@@ -20,7 +20,7 @@ export class PingSender implements MessageSender<ClientPing, UnknownDeps> {
       throw new Error(
         `Ping too soon, minimum delay is ${MIN_PING_DELAY_MS}ms. Wait another ${
           MIN_PING_DELAY_MS - (Date.now() - this.lastPingTime)
-        }ms`
+        }ms`,
       );
     }
     return {

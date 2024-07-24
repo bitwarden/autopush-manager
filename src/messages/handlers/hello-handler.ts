@@ -8,7 +8,7 @@ import { MessageHandler } from "./message-handler";
 export class HelloHandler implements MessageHandler<ServerHello> {
   constructor(
     private readonly mediator: MessageMediator,
-    private readonly logger: NamespacedLogger<"HelloHandler">
+    private readonly logger: NamespacedLogger<"HelloHandler">,
   ) {}
 
   handlesMessage(message: AutoConnectServerMessage): boolean {

@@ -56,11 +56,11 @@ export type PublicPushSubscription = {
   unsubscribe(): Promise<void>;
   addEventListener<K extends keyof PushSubscriptionEvents>(
     type: K,
-    listener: PushSubscriptionEvents[K]
+    listener: PushSubscriptionEvents[K],
   ): ListenerId;
   removeEventListener<K extends keyof PushSubscriptionEvents>(
     type: K,
-    listenerId: ListenerId
+    listenerId: ListenerId,
   ): void;
 };
 
@@ -76,7 +76,7 @@ export class PushSubscription<const TChannelId extends Guid> implements PublicPu
     private readonly keys: SubscriptionKeys,
     readonly options: PushSubscriptionOptions,
     private readonly unsubscribeCallback: () => Promise<void>,
-    private readonly logger: NamespacedLogger<JoinStrings<string, TChannelId>>
+    private readonly logger: NamespacedLogger<JoinStrings<string, TChannelId>>,
   ) {
     this.eventManager = new EventManager(logger.extend("EventManager"));
   }
@@ -138,7 +138,7 @@ export class PushSubscription<const TChannelId extends Guid> implements PublicPu
       this.keys.ecKeys,
       this.keys.auth,
       senderPublicKey,
-      salt
+      salt,
     );
 
     let decryptedContent: ArrayBuffer;
@@ -146,7 +146,7 @@ export class PushSubscription<const TChannelId extends Guid> implements PublicPu
       decryptedContent = await aesGcmDecrypt(
         fromUtf8ToBuffer(message.data),
         contentEncryptionKey,
-        nonce
+        nonce,
       );
     } catch (e) {
       this.logger.error("Error decrypting notification", e);
@@ -164,7 +164,7 @@ export class PushSubscription<const TChannelId extends Guid> implements PublicPu
     endpoint: string,
     options: PushSubscriptionOptions,
     unsubscribeCallback: () => Promise<void>,
-    logger: NamespacedLogger<JoinStrings<string, T>>
+    logger: NamespacedLogger<JoinStrings<string, T>>,
   ) {
     if (!options.applicationServerKey) {
       throw new Error("Only VAPID authenticated subscriptions are supported");
@@ -185,7 +185,7 @@ export class PushSubscription<const TChannelId extends Guid> implements PublicPu
   static async recover<const T extends Guid>(
     storage: NamespacedStorage<T>,
     unsubscribeCallback: () => Promise<void>,
-    logger: NamespacedLogger<JoinStrings<string, T>>
+    logger: NamespacedLogger<JoinStrings<string, T>>,
   ) {
     const keys = await PushSubscription.readKeys(storage);
     if (!keys) {
@@ -207,7 +207,7 @@ export class PushSubscription<const TChannelId extends Guid> implements PublicPu
       keys,
       serializedOptions,
       unsubscribeCallback,
-      logger
+      logger,
     );
   }
 
@@ -218,7 +218,7 @@ export class PushSubscription<const TChannelId extends Guid> implements PublicPu
   }
 
   private static async readKeys<const T extends string>(
-    storage: NamespacedStorage<T>
+    storage: NamespacedStorage<T>,
   ): Promise<SubscriptionKeys | null> {
     const storedAuth = await storage.read<EncodedSymmetricKey>(STORAGE_KEYS.auth);
     const ecKeys = await readEcKeys(storage, STORAGE_KEYS.privateEcKey);
@@ -232,7 +232,7 @@ export class PushSubscription<const TChannelId extends Guid> implements PublicPu
   }
 
   private static async generateKeys<const T extends string>(
-    storage: NamespacedStorage<T>
+    storage: NamespacedStorage<T>,
   ): Promise<SubscriptionKeys> {
     const auth = await randomBytes(16);
     const ecKeys = await generateEcKeys();
@@ -270,7 +270,7 @@ export class PushSubscription<const TChannelId extends Guid> implements PublicPu
 
   addEventListener<K extends keyof PushSubscriptionEvents>(
     type: K,
-    listener: PushSubscriptionEvents[K]
+    listener: PushSubscriptionEvents[K],
   ): ListenerId {
     return this.eventManager.addEventListener(type, listener);
   }

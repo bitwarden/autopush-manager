@@ -6,7 +6,7 @@
  */
 export const toEqualBuffer: jest.CustomMatcher = function (
   received: ArrayBuffer | Uint8Array | ArrayBufferLike,
-  expected: ArrayBuffer | Uint8Array | ArrayBufferLike
+  expected: ArrayBuffer | Uint8Array | ArrayBufferLike,
 ) {
   received = new Uint8Array(received);
   expected = new Uint8Array(expected);

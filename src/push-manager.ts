@@ -26,7 +26,10 @@ export class PushManager implements PublicPushManager {
   private wsOpenTime: number | null = null;
   private mediator!: MessageMediator; // This is assigned in the create method
   private subscriptionHandler!: SubscriptionHandler; // This is assigned in the create method
-  private constructor(private readonly storage: Storage, private readonly logger: Logger) {}
+  private constructor(
+    private readonly storage: Storage,
+    private readonly logger: Logger,
+  ) {}
 
   get uaid() {
     return this._uaid;
@@ -51,7 +54,7 @@ export class PushManager implements PublicPushManager {
     }
 
     const existing = this.subscriptionHandler.getByApplicationServerKey(
-      options.applicationServerKey
+      options.applicationServerKey,
     );
     if (existing) {
       return existing;
@@ -86,7 +89,7 @@ export class PushManager implements PublicPushManager {
     const subscriptionHandler = await SubscriptionHandler.create(
       storage,
       (channelId: Guid) => manager.unsubscribe(channelId),
-      new NamespacedLogger(logger, "SubscriptionHandler")
+      new NamespacedLogger(logger, "SubscriptionHandler"),
     );
     const mediator = new MessageMediator(manager, subscriptionHandler, logger);
 
@@ -133,7 +136,7 @@ export class PushManager implements PublicPushManager {
       const timeOpen = this.wsOpenTime == null ? 0 : new Date().getTime() - this.wsOpenTime;
       this.wsOpenTime = null;
       this.logger.debug(
-        `WebSocket connection closed. Connection open for ${timeOpen / 1000} seconds`
+        `WebSocket connection closed. Connection open for ${timeOpen / 1000} seconds`,
       );
 
       // TODO: implement a backoff strategy

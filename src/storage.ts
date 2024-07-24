@@ -9,7 +9,10 @@ export type WriteCallback = <T>(key: string, value: T) => Promise<void>;
 export type RemoveCallback = (key: string) => Promise<void>;
 
 export class NamespacedStorage<const TNamespace extends string> implements Storage {
-  constructor(private readonly storage: Storage, private readonly namespace: TNamespace) {}
+  constructor(
+    private readonly storage: Storage,
+    private readonly namespace: TNamespace,
+  ) {}
 
   async read<T>(key: string): Promise<T | null> {
     return this.storage.read<T>(this.getKey(key));

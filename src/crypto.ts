@@ -37,7 +37,7 @@ export function randomBytes(size: number): Promise<CsprngArray> {
 export async function aesGcmDecrypt(
   data: ArrayBuffer,
   key: ArrayBuffer,
-  iv: ArrayBuffer
+  iv: ArrayBuffer,
 ): Promise<ArrayBuffer> {
   if (isNode) {
     const dataBuffer = Buffer.from(data.slice(0, data.byteLength - 16));
@@ -60,7 +60,7 @@ export async function aesGcmDecrypt(
         tagLength: 128,
       },
       impKey,
-      data
+      data,
     ) as Promise<ArrayBuffer>;
   }
 }
@@ -72,7 +72,7 @@ export async function generateEcKeys(): Promise<ECKeyPair> {
       namedCurve: "P-256",
     },
     true,
-    ["deriveKey", "deriveBits"]
+    ["deriveKey", "deriveBits"],
   );
   return {
     ...keys,
@@ -83,42 +83,46 @@ export async function generateEcKeys(): Promise<ECKeyPair> {
 export async function writeEcKeys(
   storage: Storage,
   ecKeys: ECKeyPair,
-  privateKeyLocation: string
+  privateKeyLocation: string,
 ): Promise<void> {
   const privateKey = ecKeys.privateKey as CryptoKey;
   const jwk = await webCrypto.subtle.exportKey("jwk", privateKey);
   await storage.write(privateKeyLocation, jwk);
 }
 
-export async function readEcKeys(storage: Storage, privateKeyLocation: string): Promise<ECKeyPair | null> {
+export async function readEcKeys(
+  storage: Storage,
+  privateKeyLocation: string,
+): Promise<ECKeyPair | null> {
   const jwk = await storage.read<EncodedPrivateKey>(privateKeyLocation);
   if (!jwk) {
     return null;
   }
+  const jwkClone = { ...jwk };
   const privateKey = await webCrypto.subtle.importKey(
     "jwk",
-    jwk,
+    jwkClone,
     {
       name: "ECDH",
       namedCurve: "P-256",
     },
     true,
-    ["deriveKey", "deriveBits"]
+    ["deriveKey", "deriveBits"],
   );
 
   // Delete private data from the JWK
-  delete jwk.d;
-  jwk.key_ops = [];
+  delete jwkClone.d;
+  jwkClone.key_ops = [];
 
   const publicKey = await webCrypto.subtle.importKey(
     "jwk",
-    jwk,
+    jwkClone,
     {
       name: "ECDH",
       namedCurve: "P-256",
     },
     true,
-    []
+    [],
   );
   const keys = {
     publicKey,
@@ -128,7 +132,7 @@ export async function readEcKeys(storage: Storage, privateKeyLocation: string): 
     ...keys,
     uncompressedPublicKey: (await webCrypto.subtle.exportKey(
       "raw",
-      publicKey
+      publicKey,
     )) as UncompressedPublicKey,
   };
 }
@@ -138,7 +142,7 @@ export async function readEcKeys(storage: Storage, privateKeyLocation: string): 
 // - non-ec p256 signatures
 export async function verifyVapidAuth(
   authHeader: string,
-  vapidPublicKey: string
+  vapidPublicKey: string,
 ): Promise<boolean> {
   const parts = authHeader.split(" ");
   if (parts.length !== 3 || parts[0] !== "vapid") {
@@ -179,13 +183,13 @@ async function ecVerify(data: string, signature: string, publicKey: string): Pro
     publicKeyBuffer,
     { name: "ECDSA", namedCurve: "P-256" },
     false,
-    ["verify"]
+    ["verify"],
   );
   return await subtle.verify(
     { name: "ECDSA", hash: { name: "SHA-256" } },
     key,
     fromUrlB64ToBuffer(signature),
-    fromUtf8ToBuffer(data)
+    fromUtf8ToBuffer(data),
   );
   // }
 }
@@ -194,7 +198,7 @@ export async function ecdhDeriveSharedKey(
   ecKeys: ECKeyPair,
   secret: ArrayBuffer,
   otherPublicKey: string,
-  salt: string
+  salt: string,
 ): Promise<{
   contentEncryptionKey: ArrayBuffer;
   nonce: ArrayBuffer;
@@ -206,7 +210,7 @@ export async function ecdhDeriveSharedKey(
     fromUrlB64ToBuffer(otherPublicKey),
     { name: "ECDH", namedCurve: "P-256" },
     true,
-    []
+    [],
   );
 
   const derivedSecret = await subtle.deriveBits(
@@ -215,7 +219,7 @@ export async function ecdhDeriveSharedKey(
       public: senderPublicKey,
     },
     ecKeys.privateKey as CryptoKey,
-    256
+    256,
   );
 
   const hkdfDerivedSecret = await subtle.importKey("raw", derivedSecret, { name: "HKDF" }, false, [
@@ -231,7 +235,7 @@ export async function ecdhDeriveSharedKey(
       info: fromUtf8ToBuffer("Content-Encoding: auth\0"),
     },
     hkdfDerivedSecret,
-    256
+    256,
   );
 
   const hdkfPrk = await subtle.importKey("raw", prk, { name: "HKDF" }, false, ["deriveBits"]);
@@ -245,7 +249,7 @@ export async function ecdhDeriveSharedKey(
     },
     hdkfPrk,
     // hkdfDerivedSecret,
-    128
+    128,
   );
 
   const nonce = await subtle.deriveBits(
@@ -257,7 +261,7 @@ export async function ecdhDeriveSharedKey(
     },
     hdkfPrk,
     // hkdfDerivedSecret,
-    96
+    96,
   );
 
   return {
@@ -269,7 +273,7 @@ export async function ecdhDeriveSharedKey(
 function createInfo(
   type: string,
   clientPublicKey: ArrayBuffer,
-  serverPublicKey: ArrayBuffer
+  serverPublicKey: ArrayBuffer,
 ): Uint8Array {
   const len = type.length;
   const clientPublicKeyBuffer = new Uint8Array(clientPublicKey);

@@ -5,12 +5,7 @@
     "noImplicitAny": true,
     "target": "ES6",
     "module": "commonjs",
-    "lib": [
-      "es5",
-      "es6",
-      "es7",
-      "dom"
-    ],
+    "lib": ["es5", "es6", "es7", "dom"],
     "sourceMap": true,
     "declaration": true,
     "allowSyntheticDefaultImports": true,
@@ -18,10 +13,7 @@
     "emitDecoratorMetadata": true,
     "declarationDir": "dist/types",
     "outDir": "dist",
-    "baseUrl": ".",
+    "baseUrl": "."
   },
-  "exclude": [
-    "**/build",
-    "node_modules"
-  ]
+  "exclude": ["**/build", "node_modules"]
 }

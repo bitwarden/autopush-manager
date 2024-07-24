@@ -8,13 +8,13 @@ export class SubscriptionHandler {
   private constructor(
     private readonly storage: Storage,
     private readonly unsubscribeCallback: (channelId: Guid) => Promise<void>,
-    private readonly logger: NamespacedLogger<"SubscriptionHandler">
+    private readonly logger: NamespacedLogger<"SubscriptionHandler">,
   ) {}
 
   static async create(
     storage: Storage,
     unsubscribeCallback: (channelId: Guid) => Promise<void>,
-    logger: NamespacedLogger<"SubscriptionHandler">
+    logger: NamespacedLogger<"SubscriptionHandler">,
   ) {
     const handler = new SubscriptionHandler(storage, unsubscribeCallback, logger);
     await handler.loadSubscriptions();
@@ -24,7 +24,7 @@ export class SubscriptionHandler {
   async addSubscription<TChannelId extends Guid>(
     channelId: TChannelId,
     endpoint: string,
-    options: PushSubscriptionOptions
+    options: PushSubscriptionOptions,
   ) {
     this.logger.debug("Adding subscription", { channelId, endpoint, options });
     const storage = new NamespacedStorage(this.storage, channelId);
@@ -34,7 +34,7 @@ export class SubscriptionHandler {
       endpoint,
       options,
       () => this.unsubscribeCallback(channelId),
-      this.logger.extend(channelId)
+      this.logger.extend(channelId),
     );
     this.subscriptions.set(channelId, subscription);
     await this.writeChannelIds();
@@ -56,7 +56,7 @@ export class SubscriptionHandler {
 
   getByApplicationServerKey(applicationServerKey: string): PushSubscription<Guid> | undefined {
     return Object.values(this.subscriptions).find(
-      (sub) => sub.options.applicationServerKey === applicationServerKey
+      (sub) => sub.options.applicationServerKey === applicationServerKey,
     );
   }
 
@@ -92,7 +92,7 @@ export class SubscriptionHandler {
         const subscription = await PushSubscription.recover(
           storage,
           () => this.unsubscribeCallback(guid),
-          this.logger.extend(guid)
+          this.logger.extend(guid),
         );
         this.subscriptions.set(guid, subscription);
       } catch (e) {

@@ -17,7 +17,7 @@ export class UnregisterHandler implements MessageHandler<ServerUnregister> {
   private readonly eventManager: EventManager<{ unregistered: (channelId: Guid) => void }>;
   constructor(
     private readonly mediator: MessageMediator,
-    private readonly logger: NamespacedLogger<"UnregisterHandler">
+    private readonly logger: NamespacedLogger<"UnregisterHandler">,
   ) {
     this.eventManager = new EventManager(logger.extend("EventManager"));
   }
@@ -56,7 +56,7 @@ export class UnregisterHandler implements MessageHandler<ServerUnregister> {
               channelId: message.channelId,
               code,
             }),
-          60_000
+          60_000,
         );
         return;
       }
@@ -78,7 +78,7 @@ export class UnregisterHandler implements MessageHandler<ServerUnregister> {
             this.eventManager.removeEventListener("unregistered", listener);
             resolve();
           }
-        }
+        },
       );
     });
   }

@@ -11,7 +11,7 @@ type UnregisterDependencies = { readonly channelId: Guid; readonly code: ClientU
 export class UnregisterSender implements MessageSender<ClientUnregister, UnregisterDependencies> {
   constructor(
     private readonly mediator: MessageMediator,
-    private readonly logger: NamespacedLogger<"UnregisterSender">
+    private readonly logger: NamespacedLogger<"UnregisterSender">,
   ) {}
 
   async buildMessage(deps: UnregisterDependencies): Promise<ClientUnregister> {
@@ -23,7 +23,7 @@ export class UnregisterSender implements MessageSender<ClientUnregister, Unregis
     const unRegisterHandler = this.mediator.getHandler(UnregisterHandler);
     if (!unRegisterHandler) {
       this.logger.warn(
-        "UnregisterHandler not found, cannot inform handler of intended unregister code."
+        "UnregisterHandler not found, cannot inform handler of intended unregister code.",
       );
     }
     unRegisterHandler?.expectUnregister(deps.channelId, deps.code);

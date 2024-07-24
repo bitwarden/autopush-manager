@@ -33,7 +33,7 @@ export class MessageMediator {
   constructor(
     readonly pushManager: PushManager,
     readonly subscriptionHandler: SubscriptionHandler,
-    private readonly logger: Logger
+    private readonly logger: Logger,
   ) {
     this.handlers = [
       new HelloHandler(this, new NamespacedLogger(logger, "HelloHandler")),
@@ -70,7 +70,7 @@ export class MessageMediator {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- this any is enforced by the type constraints on the class and needed for the `send` method to work
   getSender<T extends MessageSender<AutoConnectClientMessage, any>>(
-    type: Constructor<T>
+    type: Constructor<T>,
   ): T | null {
     return this.senders.find((sender) => sender instanceof type) as T | null;
   }
@@ -103,7 +103,7 @@ export class MessageMediator {
    */
   async send<T extends MessageSender<AutoConnectClientMessage, TDeps>, TDeps extends UnknownDeps>(
     type: Constructor<T>,
-    deps: TDeps
+    deps: TDeps,
   ): Promise<void> {
     if (!this.pushManager.websocket) {
       throw new Error("No websocket connection");

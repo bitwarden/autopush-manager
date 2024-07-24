@@ -16,7 +16,7 @@ export class RegisterHandler implements MessageHandler<ServerRegister> {
   }>;
   constructor(
     private readonly mediator: MessageMediator,
-    private readonly logger: NamespacedLogger<"RegisterHandler">
+    private readonly logger: NamespacedLogger<"RegisterHandler">,
   ) {
     this.eventManager = new EventManager(logger.extend("EventManager"));
   }
@@ -79,7 +79,7 @@ export class RegisterHandler implements MessageHandler<ServerRegister> {
     const subscription = await this.mediator.subscriptionHandler.addSubscription(
       message.channelId,
       message.pushEndpoint,
-      options
+      options,
     );
 
     // Notify any listeners that the registration has been completed
@@ -113,7 +113,7 @@ export class RegisterHandler implements MessageHandler<ServerRegister> {
           setTimeout(async () => {
             await send();
             resolve();
-          }, timeoutMs)
+          }, timeoutMs),
         );
   }
 }

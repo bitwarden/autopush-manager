@@ -11,7 +11,7 @@ type RegisterDeps = { readonly options: PushSubscriptionOptions };
 export class RegisterSender implements MessageSender<ClientRegister, RegisterDeps> {
   constructor(
     private readonly mediator: MessageMediator,
-    private readonly logger: NamespacedLogger<"RegisterSender">
+    private readonly logger: NamespacedLogger<"RegisterSender">,
   ) {}
 
   async buildMessage(deps: RegisterDeps): Promise<ClientRegister> {
