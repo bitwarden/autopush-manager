@@ -1,5 +1,5 @@
 import { NamespacedLogger } from "../../logger";
-import { Guid } from "../../crypto";
+import { Guid } from "../../string-manipulation";
 import { ClientHello } from "../message";
 import { MessageSender } from "./message-sender";
 

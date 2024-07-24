@@ -1,4 +1,4 @@
-import { fromB64ToBuffer, fromB64toUrlB64, fromUrlB64ToB64, newGuid } from "./string-manipulation";
+import { fromB64toUrlB64, fromUrlB64ToB64, newGuid } from "./string-manipulation";
 
 describe("newGuid", () => {
   it("returns a new guid", () => {

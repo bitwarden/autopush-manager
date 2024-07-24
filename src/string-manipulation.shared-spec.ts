@@ -3,7 +3,6 @@ import {
   fromBufferToB64,
   fromBufferToUtf8,
   fromUtf8ToBuffer,
-  newGuid,
 } from "./string-manipulation";
 
 describe("fromBufferToB64", () => {
