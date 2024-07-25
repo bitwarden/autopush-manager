@@ -7,9 +7,11 @@ import {
   randomBytes,
   readEcKeys,
   verifyVapidAuth,
+  webPushSharedKey,
   writeEcKeys,
 } from "./crypto";
-import { fromBufferToUrlB64, fromBufferToUtf8 } from "./string-manipulation";
+import { UncompressedPublicKey } from "./crypto-types";
+import { fromBufferToUrlB64, fromBufferToUtf8, fromUrlB64ToBuffer } from "./string-manipulation";
 
 describe("randomBytes", () => {
   it("returns a buffer of the specified length", async () => {
@@ -137,3 +139,84 @@ describe("ecdhDeriveSharedKey", () => {
     );
   });
 });
+
+describe("webPushSharedKey", () => {
+  // https://datatracker.ietf.org/doc/html/rfc8291#section-5
+  it("recreates the RFC example", async () => {
+    const authenticationSecret = "BTBZMqHH6r4Tts7J_aSIgg";
+    const receiverKeys = await importKeys(
+      "q1dXpw3UpT5VOmu_cf_v6ih07Aems3njxI-JWgLcM94",
+      "BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4",
+    );
+    const senderKeys = await importKeys(
+      "yfWPiYE-n46HLnH0KqZOF1fJJU3MYrct3AELtAQ-oRw",
+      "BP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A8",
+    );
+    const contentStream =
+      "DGv6ra1nlYgDCS1FRnbzlwAAEABBBP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A_yl95bQpu6cVPTpK4Mqgkf1CXztLVBSt2Ks3oZwbuwXPXLWyouBWLVWGNWQexSgSxsj_Qulcy4a-fN";
+    const result = await webPushSharedKey(
+      { keys: receiverKeys, secret: fromUrlB64ToBuffer(authenticationSecret) },
+      {
+        publicKey: fromBufferToUrlB64(senderKeys.uncompressedPublicKey),
+        content: fromUrlB64ToBuffer(contentStream),
+      },
+    );
+
+    expect(result.contentEncryptionKey).toEqualBuffer(fromUrlB64ToBuffer("oIhVW04MRdy2XN9CiKLxTg"));
+    expect(result.nonce).toEqualBuffer(fromUrlB64ToBuffer("4h_95klXJ5E_qnoN"));
+  });
+});
+
+async function importKeys(b64urlPrivateKey: string, b64urlPublicKey: string) {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const subtle = require("crypto").webcrypto.subtle;
+
+  // const priv = fromUrlB64ToBuffer(b64urlPrivateKey)
+  const pubPoints = fromUrlB64ToBuffer(b64urlPublicKey);
+  const pubX = fromBufferToUrlB64(pubPoints.slice(1, 33));
+  const pubY = fromBufferToUrlB64(pubPoints.slice(33, 65));
+
+  const keyData = {
+    key_ops: ["deriveKey", "deriveBits"],
+    ext: true,
+    kty: "EC",
+    x: pubX,
+    y: pubY,
+    crv: "P-256",
+    d: b64urlPrivateKey,
+  } as JsonWebKey;
+
+  const privateKey = await subtle.importKey(
+    "jwk",
+    keyData,
+    {
+      name: "ECDH",
+      namedCurve: "P-256",
+    },
+    true,
+    ["deriveKey", "deriveBits"],
+  );
+
+  // Delete private data from the JWK
+  delete keyData.d;
+  keyData.key_ops = [];
+
+  const publicKey = await subtle.importKey(
+    "jwk",
+    keyData,
+    {
+      name: "ECDH",
+      namedCurve: "P-256",
+    },
+    true,
+    [],
+  );
+  const keys = {
+    publicKey,
+    privateKey,
+  };
+  return {
+    ...keys,
+    uncompressedPublicKey: (await subtle.exportKey("raw", publicKey)) as UncompressedPublicKey,
+  };
+}
