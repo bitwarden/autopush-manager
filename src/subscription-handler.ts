@@ -43,7 +43,7 @@ export class SubscriptionHandler {
   }
 
   get channelIds() {
-    return Object.keys(this.subscriptions) as Guid[];
+    return [...this.subscriptions.keys()];
   }
 
   get(channelId: Guid) {
@@ -55,7 +55,7 @@ export class SubscriptionHandler {
   }
 
   getByApplicationServerKey(applicationServerKey: string): PushSubscription<Guid> | undefined {
-    return Object.values(this.subscriptions).find(
+    return [...this.subscriptions.values()].find(
       (sub) => sub.options.applicationServerKey === applicationServerKey,
     );
   }
@@ -74,7 +74,7 @@ export class SubscriptionHandler {
   }
 
   async removeAllSubscriptions() {
-    for (const channelId of Object.keys(this.subscriptions)) {
+    for (const channelId of this.subscriptions.keys()) {
       const guid = channelId as Guid;
       await this.removeSubscription(guid);
     }

@@ -32,7 +32,7 @@ export class EventManager<const TEventMap extends EventMap> {
   ) {
     this.logger.debug("Dispatching event", event);
     const callbacks = this.callbacksFor(event);
-    for (const callback of Object.values(callbacks)) {
+    for (const callback of callbacks.values()) {
       callback(...args);
     }
   }
