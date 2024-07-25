@@ -3,8 +3,8 @@ import { Storage } from "./storage";
 import { fromBufferToUrlB64, fromUrlB64ToBuffer, fromUtf8ToBuffer } from "./string-manipulation";
 import { isNode, _global } from "./util";
 
-let subtle: typeof self.crypto.subtle | typeof import("crypto").webcrypto.subtle;
 let webCrypto: typeof self.crypto;
+let subtle: typeof self.crypto.subtle | typeof import("crypto").webcrypto.subtle;
 if (!isNode) {
   webCrypto = _global.crypto;
   subtle = webCrypto.subtle;
@@ -105,7 +105,7 @@ export async function writeEcKeys(
   privateKeyLocation: string,
 ): Promise<void> {
   const privateKey = ecKeys.privateKey as CryptoKey;
-  const jwk = await webCrypto.subtle.exportKey("jwk", privateKey);
+  const jwk = await subtle.exportKey("jwk", privateKey);
   await storage.write(privateKeyLocation, jwk);
 }
 
@@ -126,7 +126,7 @@ export async function readEcKeys(
     return null;
   }
   const jwkClone = { ...jwk };
-  const privateKey = await webCrypto.subtle.importKey(
+  const privateKey = await subtle.importKey(
     "jwk",
     jwkClone,
     {
@@ -141,7 +141,7 @@ export async function readEcKeys(
   delete jwkClone.d;
   jwkClone.key_ops = [];
 
-  const publicKey = await webCrypto.subtle.importKey(
+  const publicKey = await subtle.importKey(
     "jwk",
     jwkClone,
     {
@@ -157,10 +157,7 @@ export async function readEcKeys(
   };
   return {
     ...keys,
-    uncompressedPublicKey: (await webCrypto.subtle.exportKey(
-      "raw",
-      publicKey,
-    )) as UncompressedPublicKey,
+    uncompressedPublicKey: (await subtle.exportKey("raw", publicKey)) as UncompressedPublicKey,
   };
 }
 
@@ -222,7 +219,6 @@ export async function verifyVapidAuth(
  * @returns
  */
 async function ecVerify(data: string, signature: string, publicKey: string): Promise<boolean> {
-  const subtle = isNode ? nodeCrypto.webcrypto.subtle : webCrypto.subtle;
   const publicKeyBuffer = fromUrlB64ToBuffer(publicKey);
   const key = await subtle.importKey(
     "raw",
@@ -271,7 +267,6 @@ export async function webPushSharedKey(
   nonce: ArrayBuffer;
   encryptedContent: ArrayBuffer;
 }> {
-  const subtle = isNode ? nodeCrypto.webcrypto.subtle : webCrypto.subtle;
   const header = splitContent(new Uint8Array(serverData.content));
   if (fromBufferToUrlB64(header.serverPublicKey) !== serverData.publicKey) {
     throw new Error("Server Public key mismatch");
@@ -368,7 +363,6 @@ export async function ecdhDeriveSharedKey(
   contentEncryptionKey: ArrayBuffer;
   nonce: ArrayBuffer;
 }> {
-  const subtle = isNode ? nodeCrypto.webcrypto.subtle : webCrypto.subtle;
   const recipientPublicKey = ecKeys.uncompressedPublicKey;
   const senderPublicKey = await subtle.importKey(
     "raw",

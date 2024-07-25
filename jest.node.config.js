@@ -7,7 +7,7 @@ const sharedConfig = require("./jest.shared.config");
 /** @type {import('jest').Config} */
 module.exports = {
   ...sharedConfig,
-  testMatch: ["**/+(*.)+(node-spec|shared-spec).+(ts)"],
+  testMatch: ["**/+(*.)+(node-spec|spec).+(ts)"],
 
   displayName: "node-specific tests",
   preset: "ts-jest",

@@ -15,7 +15,7 @@ module.exports = {
   moduleNameMapper: pathsToModuleNameMapper(compilerOptions?.paths || {}, {
     prefix: "<rootDir>/",
   }),
-  projects: ["jest.any.config.js", "jest.web.config.js", "jest.node.config.js"],
+  projects: ["jest.web.config.js", "jest.node.config.js"],
 
   // Workaround for a memory leak that crashes tests in CI:
   // https://github.com/facebook/jest/issues/9430#issuecomment-1149882002

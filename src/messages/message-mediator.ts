@@ -2,7 +2,7 @@ import type { Constructor } from "type-fest";
 
 import { Logger, NamespacedLogger } from "../logger";
 import { PushManager } from "../push-manager";
-import { SubscriptionHandler } from "../subscription-manager";
+import { SubscriptionHandler } from "../subscription-handler";
 
 import { BroadcastHandler } from "./handlers/broadcast-handler";
 import { HelloHandler } from "./handlers/hello-handler";

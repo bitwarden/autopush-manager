@@ -13,7 +13,7 @@ import {
 } from "./push-subscription";
 import { Storage } from "./storage";
 import { Guid } from "./string-manipulation";
-import { SubscriptionHandler } from "./subscription-manager";
+import { SubscriptionHandler } from "./subscription-handler";
 
 export interface PublicPushManager {
   subscribe(options: PushSubscriptionOptions): Promise<PublicPushSubscription>;
