@@ -1,4 +1,4 @@
-import type { JoinStrings } from "./string-manipulation";
+import { joinNamespaces, type JoinStrings } from "./string-manipulation";
 
 export interface Logger extends Pick<Console, "debug" | "info" | "warn" | "error"> {}
 
@@ -27,7 +27,7 @@ export class NamespacedLogger<const TNamespace extends string> implements Logger
   extend<const TExtend extends string>(namespace: TExtend) {
     return new NamespacedLogger<JoinStrings<TNamespace, TExtend>>(
       this.logger,
-      `${this.namespace}:${namespace}`,
+      joinNamespaces(this.namespace, namespace),
     );
   }
 }

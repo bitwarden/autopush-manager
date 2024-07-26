@@ -1,11 +1,13 @@
+import type { Jsonify } from "type-fest";
+
 import {
   aesGcmDecrypt,
   ecdhDeriveSharedKey,
   generateEcKeys,
   randomBytes,
-  readEcKeys,
+  parsePrivateJwk,
   verifyVapidAuth,
-  writeEcKeys,
+  extractPrivateJwk,
 } from "./crypto";
 import {
   CsprngArray,
@@ -16,7 +18,7 @@ import {
 import { EventManager, ListenerId } from "./event-manager";
 import { NamespacedLogger } from "./logger";
 import { ClientAckCodes, ServerNotification } from "./messages/message";
-import { NamespacedStorage } from "./storage";
+import { Storage } from "./storage";
 import {
   Guid,
   JoinStrings,
@@ -38,7 +40,7 @@ type TKey<T extends "auth" | "p256dh"> = T extends "auth"
 const STORAGE_KEYS = Object.freeze({
   endpoint: "endpoint",
   options: "options",
-  privateEcKey: "privateEcKey",
+  privateEncKey: "privateEncKey",
   auth: "auth",
 } as const);
 
@@ -68,15 +70,20 @@ type PushSubscriptionEvents = {
   notification: (data: string | null) => void;
 };
 
-export class PushSubscription<const TChannelId extends Guid> implements PublicPushSubscription {
+export type GenericPushSubscription = PushSubscription<Guid, JoinStrings<string, Guid>>;
+export class PushSubscription<
+  const TChannelId extends Guid = Guid,
+  TNamespace extends JoinStrings<string, TChannelId> = JoinStrings<"", TChannelId>,
+> implements PublicPushSubscription
+{
   private readonly eventManager: EventManager<PushSubscriptionEvents>;
   constructor(
-    private readonly storage: NamespacedStorage<TChannelId>,
+    private readonly storage: Storage<TNamespace>,
     private readonly endpoint: URL,
     private readonly keys: SubscriptionKeys,
     readonly options: PushSubscriptionOptions,
     private readonly unsubscribeCallback: () => Promise<void>,
-    private readonly logger: NamespacedLogger<JoinStrings<string, TChannelId>>,
+    private readonly logger: NamespacedLogger<TNamespace>,
   ) {
     this.eventManager = new EventManager(logger.extend("EventManager"));
   }
@@ -160,11 +167,12 @@ export class PushSubscription<const TChannelId extends Guid> implements PublicPu
   }
 
   static async create<const T extends Guid>(
-    storage: NamespacedStorage<T>,
+    channelId: T,
+    storage: Storage<string>,
     endpoint: string,
     options: PushSubscriptionOptions,
     unsubscribeCallback: () => Promise<void>,
-    logger: NamespacedLogger<JoinStrings<string, T>>,
+    logger: NamespacedLogger<string>,
   ) {
     if (!options.applicationServerKey) {
       throw new Error("Only VAPID authenticated subscriptions are supported");
@@ -179,11 +187,19 @@ export class PushSubscription<const TChannelId extends Guid> implements PublicPu
     });
 
     const keys = await PushSubscription.generateKeys(storage);
-    return new PushSubscription(storage, urlEndpoint, keys, options, unsubscribeCallback, logger);
+    return new PushSubscription(
+      storage.extend(channelId),
+      urlEndpoint,
+      keys,
+      options,
+      unsubscribeCallback,
+      logger.extend(channelId),
+    );
   }
 
   static async recover<const T extends Guid>(
-    storage: NamespacedStorage<T>,
+    channelId: T,
+    storage: Storage<string>,
     unsubscribeCallback: () => Promise<void>,
     logger: NamespacedLogger<JoinStrings<string, T>>,
   ) {
@@ -202,7 +218,7 @@ export class PushSubscription<const TChannelId extends Guid> implements PublicPu
     const urlEndpoint = new URL(endpoint);
 
     return new PushSubscription(
-      storage,
+      storage.extend(channelId),
       urlEndpoint,
       keys,
       serializedOptions,
@@ -218,10 +234,11 @@ export class PushSubscription<const TChannelId extends Guid> implements PublicPu
   }
 
   private static async readKeys<const T extends string>(
-    storage: NamespacedStorage<T>,
+    storage: Storage<T>,
   ): Promise<SubscriptionKeys | null> {
     const storedAuth = await storage.read<EncodedSymmetricKey>(STORAGE_KEYS.auth);
-    const ecKeys = await readEcKeys(storage, STORAGE_KEYS.privateEcKey);
+    const jwk = await storage.read<Jsonify<JsonWebKey>>(STORAGE_KEYS.privateEncKey);
+    const ecKeys = await parsePrivateJwk(jwk);
     if (!storedAuth || !ecKeys) {
       return null;
     }
@@ -232,12 +249,13 @@ export class PushSubscription<const TChannelId extends Guid> implements PublicPu
   }
 
   private static async generateKeys<const T extends string>(
-    storage: NamespacedStorage<T>,
+    storage: Storage<T>,
   ): Promise<SubscriptionKeys> {
     const auth = await randomBytes(16);
     const ecKeys = await generateEcKeys();
     await storage.write(STORAGE_KEYS.auth, fromBufferToUrlB64(auth));
-    await writeEcKeys(storage, ecKeys, STORAGE_KEYS.privateEcKey);
+    const jwk = await extractPrivateJwk(ecKeys);
+    await storage.write(STORAGE_KEYS.privateEncKey, jwk as Jsonify<JsonWebKey>);
 
     return {
       auth,

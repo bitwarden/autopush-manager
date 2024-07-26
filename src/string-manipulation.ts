@@ -7,6 +7,28 @@ export type JoinStrings<
   Suffix extends string,
   Join extends string = ":",
 > = `${Prefix}${Join}${Suffix}`;
+// export type JoinStrings<
+//   Prefix extends string,
+//   Suffix extends string,
+//   Join extends string = ":",
+// > = Prefix extends "" ? Suffix : Suffix extends "" ? Prefix : `${Prefix}${Join}${Suffix}`;
+export function joinNamespaces<
+  const TPreffix extends string,
+  const TSuffix extends string,
+  const TJoin extends string,
+>(
+  prefix: TPreffix,
+  suffix: TSuffix,
+  join: TJoin = ":" as TJoin,
+): JoinStrings<TPreffix, TSuffix, TJoin> {
+  if (prefix === "") {
+    return suffix as JoinStrings<TPreffix, TSuffix, TJoin>;
+  }
+  if (suffix === "") {
+    return prefix as JoinStrings<TPreffix, TSuffix, TJoin>;
+  }
+  return `${prefix}${join}${suffix}` as JoinStrings<TPreffix, TSuffix, TJoin>;
+}
 
 // ref: http://stackoverflow.com/a/2117523/1090359
 export type Guid = Tagged<string, "Guid">;

@@ -1,5 +1,6 @@
-import { CsprngArray, ECKeyPair, EncodedPrivateKey, UncompressedPublicKey } from "./crypto-types";
-import { Storage } from "./storage";
+import type { Jsonify } from "type-fest";
+
+import { CsprngArray, ECKeyPair, UncompressedPublicKey } from "./crypto-types";
 import { fromBufferToUrlB64, fromUrlB64ToBuffer, fromUtf8ToBuffer } from "./string-manipulation";
 import { isNode, _global } from "./util";
 
@@ -94,34 +95,23 @@ export async function generateEcKeys(): Promise<ECKeyPair> {
 }
 
 /**
- * Persists the private key of an Elliptic Curve key pair to storage
- * @param storage The storage to write to
- * @param ecKeys The keys to write
- * @param privateKeyLocation The location to write the private key to
+ * Exports the private key as a jwk. This can be used to create a new key pair with {@link subtle.importKey}
+ * @param ecKeys The key pair to export
  */
-export async function writeEcKeys(
-  storage: Storage,
-  ecKeys: ECKeyPair,
-  privateKeyLocation: string,
-): Promise<void> {
+export async function extractPrivateJwk(ecKeys: ECKeyPair): Promise<JsonWebKey> {
   const privateKey = ecKeys.privateKey as CryptoKey;
   const jwk = await subtle.exportKey("jwk", privateKey);
-  await storage.write(privateKeyLocation, jwk);
+  return jwk;
 }
 
 /**
- * Reads and initialized an Elliptic curve key pair from storage
- * @param storage The storage to read from
- * @param privateKeyLocation The location at which the private key was stored
- * @returns the Elliptic curve key pair, or null if no key was found
+ * Parses a JsonWebKey, populated with private and public key information (@see {@link extractPrivateJwk}) object into an Elliptic Curve key pair
+ * @param jwk: The JsonWebKey object to parse
+ * @returns the Elliptic curve key pair, or null if jwk is null
  *
  * @throws If the key is found but cannot be used to create a valid key pair
  */
-export async function readEcKeys(
-  storage: Storage,
-  privateKeyLocation: string,
-): Promise<ECKeyPair | null> {
-  const jwk = await storage.read<EncodedPrivateKey>(privateKeyLocation);
+export async function parsePrivateJwk(jwk: Jsonify<JsonWebKey> | null): Promise<ECKeyPair | null> {
   if (!jwk) {
     return null;
   }

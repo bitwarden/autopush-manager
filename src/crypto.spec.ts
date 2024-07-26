@@ -1,14 +1,12 @@
-import { TestStorage } from "../spec/test-storage";
-
 import {
   aesGcmDecrypt,
   ecdhDeriveSharedKey,
   generateEcKeys,
   randomBytes,
-  readEcKeys,
+  parsePrivateJwk,
   verifyVapidAuth,
   webPushSharedKey,
-  writeEcKeys,
+  extractPrivateJwk,
 } from "./crypto";
 import { UncompressedPublicKey } from "./crypto-types";
 import { fromBufferToUrlB64, fromBufferToUtf8, fromUrlB64ToBuffer } from "./string-manipulation";
@@ -50,46 +48,44 @@ describe("generateEcKeys", () => {
   });
 });
 
-describe("writeEcKeys", () => {
-  let storage: TestStorage;
-
-  beforeEach(() => {
-    storage = new TestStorage();
-  });
-
+describe("extractPrivateJwk", () => {
   it("writes EC keys", async () => {
-    const keys = await generateEcKeys();
-    const privateKeyLocation = "test";
-    await writeEcKeys(storage, keys, privateKeyLocation);
-    const jwk = await storage.read<JsonWebKey>(privateKeyLocation);
-    if (jwk === null) {
-      fail("jwk is null");
-    }
-    expect(jwk.kty).toEqual("EC");
-    expect(jwk.crv).toEqual("P-256");
-    expect(jwk.d).toEqual(expect.any(String));
-    expect(jwk.x).toEqual(expect.any(String));
-    expect(jwk.y).toEqual(expect.any(String));
+    const keys = await importKeys(
+      "q1dXpw3UpT5VOmu_cf_v6ih07Aems3njxI-JWgLcM94",
+      "BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4",
+    );
+    const jwk = await extractPrivateJwk(keys);
+
+    expect(jwk).toEqual({
+      kty: "EC",
+      crv: "P-256",
+      d: "q1dXpw3UpT5VOmu_cf_v6ih07Aems3njxI-JWgLcM94",
+      ext: true,
+      key_ops: ["deriveKey", "deriveBits"],
+      x: "JXGyvs3942BVGq8e0PTNNmwRzr5VX4m8t7GGpTM5FzE",
+      y: "aOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4",
+    });
   });
 });
 
-describe("readEcKeys", () => {
+describe("parsePrivateJwk", () => {
   it("round trips EC keys", async () => {
     const keys = await generateEcKeys();
-    const storage = new TestStorage();
-    const privateKeyLocation = "test";
-    await writeEcKeys(storage, keys, privateKeyLocation);
-    const readKeys = await readEcKeys(storage, privateKeyLocation);
+    const jwk = await extractPrivateJwk(keys);
+    const readKeys = await parsePrivateJwk(jwk);
 
     if (readKeys === null) {
       fail("readKeys is null");
     }
 
-    await writeEcKeys(storage, readKeys, "test2");
+    expect(readKeys.uncompressedPublicKey).toEqualBuffer(keys.uncompressedPublicKey);
+    const readKeysJwk = await extractPrivateJwk(readKeys);
+    expect(readKeysJwk).toEqual(jwk);
+  });
 
-    expect(storage.store.get("test2") as JsonWebKey).toEqual(
-      storage.store.get(privateKeyLocation) as ArrayBuffer,
-    );
+  it("returns null when jwk is null", async () => {
+    const readKeys = await parsePrivateJwk(null);
+    expect(readKeys).toBeNull();
   });
 });
 
@@ -106,8 +102,13 @@ describe("VerifyVapidAuth", () => {
 
 describe("ecdhDeriveSharedKey", () => {
   it("derives a shared key", async () => {
-    const storage = new TestStorage();
-    storage.store.set("privateKey", {
+    const publicKey = new Uint8Array([
+      4, 212, 7, 72, 118, 252, 190, 220, 245, 154, 52, 177, 252, 15, 23, 133, 156, 239, 180, 143,
+      238, 35, 90, 17, 113, 37, 51, 202, 227, 65, 216, 90, 65, 164, 147, 8, 238, 157, 148, 51, 109,
+      61, 222, 177, 105, 70, 150, 45, 212, 238, 129, 62, 121, 29, 29, 181, 81, 11, 242, 181, 219,
+      56, 159, 236, 125,
+    ]);
+    const localKeys = await parsePrivateJwk({
       key_ops: ["deriveKey", "deriveBits"],
       ext: true,
       kty: "EC",
@@ -116,13 +117,6 @@ describe("ecdhDeriveSharedKey", () => {
       crv: "P-256",
       d: "EZdq8BiFjHbl6U6F0iK0yF8nXvw8-6mGjto9E_2fpwo",
     });
-    const publicKey = new Uint8Array([
-      4, 212, 7, 72, 118, 252, 190, 220, 245, 154, 52, 177, 252, 15, 23, 133, 156, 239, 180, 143,
-      238, 35, 90, 17, 113, 37, 51, 202, 227, 65, 216, 90, 65, 164, 147, 8, 238, 157, 148, 51, 109,
-      61, 222, 177, 105, 70, 150, 45, 212, 238, 129, 62, 121, 29, 29, 181, 81, 11, 242, 181, 219,
-      56, 159, 236, 125,
-    ]);
-    const localKeys = await readEcKeys(storage, "privateKey");
     if (localKeys === null) {
       fail("localKeys is null");
     }

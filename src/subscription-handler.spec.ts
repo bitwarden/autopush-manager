@@ -31,7 +31,7 @@ describe("SubscriptionManager", () => {
   const [channelId, endpoint, options] = createSubscriptionData();
 
   beforeEach(async () => {
-    storage = new TestStorage();
+    storage = TestStorage.create();
     const testLogger = new TestLogger();
     logger = testLogger.setNamespace("SubscriptionHandler");
     loggerMock = testLogger.mock;

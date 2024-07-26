@@ -7,11 +7,11 @@ import { HelloSender } from "./messages/senders/hello-sender";
 import { RegisterSender } from "./messages/senders/register-sender";
 import { UnregisterSender } from "./messages/senders/unregister-sender";
 import {
+  GenericPushSubscription,
   PublicPushSubscription,
-  PushSubscription,
   PushSubscriptionOptions,
 } from "./push-subscription";
-import { Storage } from "./storage";
+import { PublicStorage, Storage } from "./storage";
 import { Guid } from "./string-manipulation";
 import { SubscriptionHandler } from "./subscription-handler";
 
@@ -44,7 +44,7 @@ export class PushManager implements PublicPushManager {
     return this._websocket;
   }
 
-  async subscribe(options: PushSubscriptionOptions): Promise<PushSubscription<Guid>> {
+  async subscribe(options: PushSubscriptionOptions): Promise<GenericPushSubscription> {
     if (!options || !options.applicationServerKey) {
       throw new Error("Invalid options. Only VAPID authenticated subscriptions are supported");
     }
@@ -84,7 +84,8 @@ export class PushManager implements PublicPushManager {
     await promise;
   }
 
-  static async create(storage: Storage, logger: Logger) {
+  static async create(externalStorage: PublicStorage, logger: Logger) {
+    const storage = new Storage(externalStorage);
     const manager = new PushManager(storage, logger);
     const subscriptionHandler = await SubscriptionHandler.create(
       storage,

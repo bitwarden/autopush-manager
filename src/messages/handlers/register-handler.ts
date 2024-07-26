@@ -1,6 +1,6 @@
 import { EventManager } from "../../event-manager";
 import { NamespacedLogger } from "../../logger";
-import { PushSubscriptionOptions, PushSubscription } from "../../push-subscription";
+import { PushSubscriptionOptions, GenericPushSubscription } from "../../push-subscription";
 import { Guid } from "../../string-manipulation";
 import { AutoConnectServerMessage, ClientUnregisterCodes, ServerRegister } from "../message";
 import { MessageMediator } from "../message-mediator";
@@ -12,7 +12,7 @@ import { MessageHandler } from "./message-handler";
 export class RegisterHandler implements MessageHandler<ServerRegister> {
   private readonly registeringQueue: Map<Guid, PushSubscriptionOptions> = new Map();
   private readonly eventManager: EventManager<{
-    registered: (subscription: PushSubscription<Guid>, channelId: Guid) => void;
+    registered: (subscription: GenericPushSubscription, channelId: Guid) => void;
   }>;
   constructor(
     private readonly mediator: MessageMediator,
@@ -88,7 +88,7 @@ export class RegisterHandler implements MessageHandler<ServerRegister> {
     this.logger.debug("Registered handled", message);
   }
 
-  async awaitRegister(applicationServerKey: string): Promise<PushSubscription<Guid>> {
+  async awaitRegister(applicationServerKey: string): Promise<GenericPushSubscription> {
     return new Promise((resolve) => {
       const listener = this.eventManager.addEventListener("registered", (subscription) => {
         if (subscription.options.applicationServerKey === applicationServerKey) {

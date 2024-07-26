@@ -1,10 +1,14 @@
 import { NamespacedLogger } from "./logger";
-import { PushSubscription, PushSubscriptionOptions } from "./push-subscription";
-import { NamespacedStorage, Storage } from "./storage";
+import {
+  GenericPushSubscription,
+  PushSubscription,
+  PushSubscriptionOptions,
+} from "./push-subscription";
+import { Storage } from "./storage";
 import { Guid } from "./string-manipulation";
 
 export class SubscriptionHandler {
-  private readonly subscriptions: Map<Guid, PushSubscription<Guid>> = new Map();
+  private readonly subscriptions: Map<Guid, GenericPushSubscription> = new Map();
   private constructor(
     private readonly storage: Storage,
     private readonly unsubscribeCallback: (channelId: Guid) => Promise<void>,
@@ -27,14 +31,14 @@ export class SubscriptionHandler {
     options: PushSubscriptionOptions,
   ) {
     this.logger.debug("Adding subscription", { channelId, endpoint, options });
-    const storage = new NamespacedStorage(this.storage, channelId);
 
     const subscription = await PushSubscription.create(
-      storage,
+      channelId,
+      this.storage,
       endpoint,
       options,
       () => this.unsubscribeCallback(channelId),
-      this.logger.extend(channelId),
+      this.logger,
     );
     this.subscriptions.set(channelId, subscription);
     await this.writeChannelIds();
@@ -54,7 +58,7 @@ export class SubscriptionHandler {
     return sub;
   }
 
-  getByApplicationServerKey(applicationServerKey: string): PushSubscription<Guid> | undefined {
+  getByApplicationServerKey(applicationServerKey: string): GenericPushSubscription | undefined {
     return [...this.subscriptions.values()].find(
       (sub) => sub.options.applicationServerKey === applicationServerKey,
     );
@@ -87,9 +91,10 @@ export class SubscriptionHandler {
     }
     for (const channelId of channelIds) {
       const guid = channelId as Guid;
-      const storage = new NamespacedStorage(this.storage, guid);
+      const storage = this.storage.extend(guid);
       try {
         const subscription = await PushSubscription.recover(
+          guid,
           storage,
           () => this.unsubscribeCallback(guid),
           this.logger.extend(guid),
