@@ -1,4 +1,4 @@
-import { Logger, NamespacedLogger } from "./logger";
+import { Logger, NamespacedLogger, TimedLogger } from "./logger";
 import { RegisterHandler } from "./messages/handlers/register-handler";
 import { UnregisterHandler } from "./messages/handlers/unregister-handler";
 import { ClientUnregisterCodes } from "./messages/message";
@@ -84,8 +84,9 @@ export class PushManager implements PublicPushManager {
     await promise;
   }
 
-  static async create(externalStorage: PublicStorage, logger: Logger) {
+  static async create(externalStorage: PublicStorage, externalLogger: Logger) {
     const storage = new Storage(externalStorage);
+    const logger = new TimedLogger(externalLogger);
     const manager = new PushManager(storage, logger);
     const subscriptionHandler = await SubscriptionHandler.create(
       storage,
