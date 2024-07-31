@@ -107,6 +107,6 @@ export class SubscriptionHandler {
   }
 
   private async writeChannelIds() {
-    await this.storage.write("channelIds", Object.keys(this.subscriptions));
+    await this.storage.write("channelIds", this.channelIds);
   }
 }

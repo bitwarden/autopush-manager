@@ -5,18 +5,19 @@ import { TestStorage } from "../spec/test-storage";
 
 import { extractPrivateJwk } from "./crypto";
 import { GenericPushSubscription, PushSubscription } from "./push-subscription";
-import { fromBufferToUrlB64, newGuid } from "./string-manipulation";
+import { fromBufferToUrlB64, joinNamespaces, newGuid } from "./string-manipulation";
+
+const data = {
+  channelId: newGuid(),
+  endpoint: "https://example.com/",
+  options: {
+    userVisibleOnly: true,
+    applicationServerKey:
+      "BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4",
+  },
+};
 
 describe("PushSubscription", () => {
-  const data = {
-    channelId: newGuid(),
-    endpoint: "https://example.com/",
-    options: {
-      userVisibleOnly: true,
-      applicationServerKey:
-        "BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4",
-    },
-  };
   let storage: TestStorage;
   let logger: TestLogger;
   const unsubscribeCallback = jest.fn();
@@ -49,21 +50,21 @@ describe("PushSubscription", () => {
       await expect(
         PushSubscription.create(
           data.channelId,
-          storage.setNamespace(data.channelId),
+          storage,
           data.endpoint,
           { userVisibleOnly: true, applicationServerKey: null as unknown as string },
           unsubscribeCallback,
-          logger.setNamespace("test").extend(data.channelId),
+          logger.setNamespace("test"),
         ),
       ).rejects.toThrow("Only VAPID authenticated subscriptions are supported");
     });
 
     it("writes the endpoint to storage", async () => {
-      expect(await storage.read("endpoint")).toEqual(data.endpoint);
+      expect(await storage.read(joinNamespaces(data.channelId, "endpoint"))).toEqual(data.endpoint);
     });
 
     it("writes the options to storage", async () => {
-      expect(await storage.read("options")).toEqual({
+      expect(await storage.read(joinNamespaces(data.channelId, "options"))).toEqual({
         userVisibleOnly: data.options.userVisibleOnly,
         applicationServerKey: data.options.applicationServerKey,
       });
@@ -79,7 +80,10 @@ describe("PushSubscription", () => {
         logger.setNamespace("test").extend(data.channelId),
       );
 
-      expect(storage.mock.write).toHaveBeenCalledWith("privateEncKey", any());
+      expect(storage.backing.mock.write).toHaveBeenCalledWith(
+        joinNamespaces(data.channelId, "privateEncKey"),
+        any(),
+      );
     });
 
     it("writes auth key to storage", async () => {
@@ -92,7 +96,10 @@ describe("PushSubscription", () => {
         logger.setNamespace("test").extend(data.channelId),
       );
 
-      expect(storage.mock.write).toHaveBeenCalledWith("auth", anyString());
+      expect(storage.backing.mock.write).toHaveBeenCalledWith(
+        joinNamespaces(data.channelId, "auth"),
+        anyString(),
+      );
     });
 
     it("store has all the values", async () => {
@@ -100,25 +107,29 @@ describe("PushSubscription", () => {
       const subtle = require("crypto").webcrypto.subtle;
       const prvJwk = await subtle.exportKey("jwk", pushSubscription["keys"].ecKeys.privateKey);
 
-      expect(storage.store).toEqual(
-        new Map(
-          Object.entries({
-            endpoint: data.endpoint,
-            options: data.options,
-            auth: pushSubscription.getKey("auth"),
-            privateEncKey: prvJwk,
+      const expected = new Map([
+        [joinNamespaces(data.channelId, "endpoint"), JSON.stringify(data.endpoint)],
+        [
+          joinNamespaces(data.channelId, "options"),
+          JSON.stringify({
+            userVisibleOnly: data.options.userVisibleOnly,
+            applicationServerKey: data.options.applicationServerKey,
           }),
-        ),
-      );
+        ],
+        [joinNamespaces(data.channelId, "auth"), JSON.stringify(pushSubscription.getKey("auth"))],
+        [joinNamespaces(data.channelId, "privateEncKey"), JSON.stringify(prvJwk)],
+      ]);
+
+      expect(storage.backing.store).toEqual(expected);
     });
   });
-
   describe("recover", () => {
-    let recoveredSubscription: PushSubscription<typeof data.channelId>;
+    let recoveredSubscription: GenericPushSubscription;
 
     beforeEach(async () => {
       recoveredSubscription = await PushSubscription.recover(
-        storage.setNamespace(data.channelId),
+        data.channelId,
+        storage,
         unsubscribeCallback,
         logger.setNamespace("test").extend(data.channelId),
       );
@@ -150,11 +161,21 @@ describe("PushSubscription", () => {
   });
 
   describe("destroy", () => {
-    // it("removes all keys from storage", async () => {
-    //   await pushSubscription.destroy();
-    //   expect(await storage.read("endpoint")).toBeUndefined();
-    //   expect(await storage.read("options")).toBeUndefined();
-    // });
+    it("removes all keys from storage", async () => {
+      await pushSubscription.destroy();
+      expect(storage.backing.mock.remove).toHaveBeenCalledWith(
+        joinNamespaces(data.channelId, "endpoint"),
+      );
+      expect(storage.backing.mock.remove).toHaveBeenCalledWith(
+        joinNamespaces(data.channelId, "options"),
+      );
+      expect(storage.backing.mock.remove).toHaveBeenCalledWith(
+        joinNamespaces(data.channelId, "auth"),
+      );
+      expect(storage.backing.mock.remove).toHaveBeenCalledWith(
+        joinNamespaces(data.channelId, "privateEncKey"),
+      );
+    });
   });
 
   describe("toJSON", () => {

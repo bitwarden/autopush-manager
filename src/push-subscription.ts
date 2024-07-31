@@ -24,8 +24,8 @@ import {
   JoinStrings,
   fromUtf8ToBuffer,
   fromBufferToUtf8,
-  fromB64ToBuffer,
   fromBufferToUrlB64,
+  fromUrlB64ToBuffer,
 } from "./string-manipulation";
 
 type SubscriptionKeys = {
@@ -177,18 +177,19 @@ export class PushSubscription<
     if (!options.applicationServerKey) {
       throw new Error("Only VAPID authenticated subscriptions are supported");
     }
+    const subscriptionStorage = storage.extend(channelId);
     // Throws on invalid endpoint
     const urlEndpoint = new URL(endpoint);
 
-    await storage.write(STORAGE_KEYS.endpoint, endpoint);
-    await storage.write(STORAGE_KEYS.options, {
+    await subscriptionStorage.write(STORAGE_KEYS.endpoint, endpoint);
+    await subscriptionStorage.write(STORAGE_KEYS.options, {
       userVisibleOnly: options.userVisibleOnly,
       applicationServerKey: options.applicationServerKey,
     });
 
-    const keys = await PushSubscription.generateKeys(storage);
+    const keys = await PushSubscription.generateKeys(subscriptionStorage);
     return new PushSubscription(
-      storage.extend(channelId),
+      subscriptionStorage,
       urlEndpoint,
       keys,
       options,
@@ -201,29 +202,32 @@ export class PushSubscription<
     channelId: T,
     storage: Storage<string>,
     unsubscribeCallback: () => Promise<void>,
-    logger: NamespacedLogger<JoinStrings<string, T>>,
+    logger: NamespacedLogger<string>,
   ) {
-    const keys = await PushSubscription.readKeys(storage);
+    const subscriptionStorage = storage.extend(channelId);
+    const keys = await PushSubscription.readKeys(subscriptionStorage);
     if (!keys) {
       throw new Error("No keys found for channel");
     }
-    const serializedOptions = await storage.read<PushSubscriptionOptions>(STORAGE_KEYS.options);
+    const serializedOptions = await subscriptionStorage.read<PushSubscriptionOptions>(
+      STORAGE_KEYS.options,
+    );
     if (!serializedOptions) {
       throw new Error("No options found for channel");
     }
-    const endpoint = await storage.read<string>(STORAGE_KEYS.endpoint);
+    const endpoint = await subscriptionStorage.read<string>(STORAGE_KEYS.endpoint);
     if (!endpoint) {
       throw new Error("No endpoint found for channel");
     }
     const urlEndpoint = new URL(endpoint);
 
     return new PushSubscription(
-      storage.extend(channelId),
+      subscriptionStorage,
       urlEndpoint,
       keys,
       serializedOptions,
       unsubscribeCallback,
-      logger,
+      logger.extend(channelId),
     );
   }
 
@@ -243,7 +247,7 @@ export class PushSubscription<
       return null;
     }
     return {
-      auth: fromB64ToBuffer(storedAuth) as CsprngArray,
+      auth: fromUrlB64ToBuffer(storedAuth) as CsprngArray,
       ecKeys,
     };
   }

@@ -134,7 +134,8 @@ describe("SubscriptionManager", () => {
     });
 
     it("gets all channel ids", () => {
-      expect(manager.channelIds).toEqual(data.map(([id]) => id));
+      expect(manager.channelIds).toHaveLength(data.length);
+      expect(manager.channelIds).toEqual(expect.arrayContaining(data.map(([id]) => id)));
     });
   });
 });
