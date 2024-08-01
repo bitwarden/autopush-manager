@@ -1,12 +1,11 @@
 {
   "name": "autopush-manager",
   "version": "0.1.0",
-  "description": "A module to subscribe to Mozilla Autopush an receive notifications",
+  "description": "A module to subscribe to Mozilla Autopush and receive notifications",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "build": "run-p build:*",
-    "build:main": "tsc -p tsconfig.json",
-    "build:module": "tsc -p tsconfig.module.json",
+    "build": "tsc -p tsconfig.json",
     "lint": "eslint . --cache --cache-strategy content && prettier --check .",
     "lint:fix:eslint": "eslint . --cache --cache-strategy content --fix",
     "lint:fix:prettier": "prettier --cache --write .",
@@ -27,6 +26,7 @@
     "@eslint/js": "^9.7.0",
     "@types/eslint__js": "^8.42.3",
     "@types/jest": "^29.5.12",
+    "@types/ws": "^8.5.12",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.29.1",
@@ -39,5 +39,8 @@
     "type-fest": "^4.22.1",
     "typescript": "^5.5.4",
     "typescript-eslint": "^7.17.0"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
   }
 }

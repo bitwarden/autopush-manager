@@ -45,17 +45,6 @@ const STORAGE_KEYS = Object.freeze({
 } as const);
 
 export type PublicPushSubscription = {
-  toJSON(): {
-    endpoint: string;
-    expirationTime: Date | null;
-    keys: {
-      auth: string;
-      p256dh: string;
-    };
-  };
-
-  getKey(key: "auth" | "p256dh"): string;
-  unsubscribe(): Promise<void>;
   addEventListener<K extends keyof PushSubscriptionEvents>(
     type: K,
     listener: PushSubscriptionEvents[K],
@@ -64,6 +53,16 @@ export type PublicPushSubscription = {
     type: K,
     listenerId: ListenerId,
   ): void;
+  unsubscribe(): Promise<void>;
+  getKey(key: "auth" | "p256dh"): string;
+  toJSON(): {
+    endpoint: string;
+    expirationTime: Date | null;
+    keys: {
+      auth: string;
+      p256dh: string;
+    };
+  };
 };
 
 type PushSubscriptionEvents = {

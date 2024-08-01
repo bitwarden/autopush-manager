@@ -1,41 +1,25 @@
+import * as crypto from "crypto";
+
 import type { Jsonify } from "type-fest";
 
 import { CsprngArray, ECKeyPair, UncompressedPublicKey } from "./crypto-types";
 import { fromBufferToUrlB64, fromUrlB64ToBuffer, fromUtf8ToBuffer } from "./string-manipulation";
-import { isNode, _global } from "./util";
 
-let webCrypto: typeof self.crypto;
-let subtle: typeof self.crypto.subtle | typeof import("crypto").webcrypto.subtle;
-if (!isNode) {
-  webCrypto = _global.crypto;
-  subtle = webCrypto.subtle;
-}
-
-let nodeCrypto: typeof import("crypto");
-if (isNode) {
-  nodeCrypto = require("crypto");
-  subtle = nodeCrypto.webcrypto.subtle;
-}
+const subtle = crypto.webcrypto.subtle;
 
 /**
  * Return a buffer filled with random bytes generated from a cryptographically secure random number generator
  */
 export function randomBytes(size: number): Promise<CsprngArray> {
-  if (isNode) {
-    return new Promise<CsprngArray>((resolve, reject) => {
-      nodeCrypto.randomBytes(size, (error, bytes) => {
-        if (error != null) {
-          reject(error);
-        } else {
-          resolve(new Uint8Array(bytes) as CsprngArray);
-        }
-      });
+  return new Promise<CsprngArray>((resolve, reject) => {
+    crypto.randomBytes(size, (error, bytes) => {
+      if (error != null) {
+        reject(error);
+      } else {
+        resolve(new Uint8Array(bytes) as CsprngArray);
+      }
     });
-  } else {
-    const array = new Uint8Array(size);
-    webCrypto.getRandomValues(array);
-    return Promise.resolve(array as CsprngArray);
-  }
+  });
 }
 
 /**
@@ -49,30 +33,14 @@ export async function aesGcmDecrypt(
   key: ArrayBuffer,
   iv: ArrayBuffer,
 ): Promise<ArrayBuffer> {
-  if (isNode) {
-    const dataBuffer = Buffer.from(data.slice(0, data.byteLength - 16));
-    const authTag = Buffer.from(data.slice(data.byteLength - 16));
-    const cryptoKey = nodeCrypto.createSecretKey(Buffer.from(key));
-    const cipher = nodeCrypto.createDecipheriv("aes-128-gcm", cryptoKey, Buffer.from(iv));
-    cipher.setAuthTag(authTag);
-    const decrypted = cipher.update(dataBuffer);
-    cipher.final();
-    return decrypted;
-  } else {
-    const impKey = await webCrypto.subtle.importKey("raw", key, { name: "AES-GCM" }, false, [
-      "decrypt",
-    ]);
-    return _global.crypto.subtle.decrypt(
-      {
-        name: "AES-GCM",
-        iv,
-        additionalData: new Uint8Array(0),
-        tagLength: 128,
-      },
-      impKey,
-      data,
-    ) as Promise<ArrayBuffer>;
-  }
+  const dataBuffer = Buffer.from(data.slice(0, data.byteLength - 16));
+  const authTag = Buffer.from(data.slice(data.byteLength - 16));
+  const cryptoKey = crypto.createSecretKey(Buffer.from(key));
+  const cipher = crypto.createDecipheriv("aes-128-gcm", cryptoKey, Buffer.from(iv));
+  cipher.setAuthTag(authTag);
+  const decrypted = cipher.update(dataBuffer);
+  cipher.final();
+  return decrypted;
 }
 
 /**

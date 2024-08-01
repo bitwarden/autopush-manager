@@ -1,7 +1,9 @@
+import { WebSocket } from "ws";
+
 import { Logger, NamespacedLogger, TimedLogger } from "./logger";
 import { RegisterHandler } from "./messages/handlers/register-handler";
 import { UnregisterHandler } from "./messages/handlers/unregister-handler";
-import { ClientUnregisterCodes } from "./messages/message";
+import { AutoConnectServerMessage, ClientUnregisterCodes } from "./messages/message";
 import { MessageMediator } from "./messages/message-mediator";
 import { HelloSender } from "./messages/senders/hello-sender";
 import { RegisterSender } from "./messages/senders/register-sender";
@@ -17,6 +19,7 @@ import { SubscriptionHandler } from "./subscription-handler";
 
 export interface PublicPushManager {
   subscribe(options: PushSubscriptionOptions): Promise<PublicPushSubscription>;
+  destroy(): Promise<void>;
 }
 
 export class PushManager implements PublicPushManager {
@@ -110,13 +113,9 @@ export class PushManager implements PublicPushManager {
     }
   }
 
-  async shutdown() {
+  async destroy() {
     this.reconnect = false;
     this._websocket?.close();
-  }
-
-  async destroy() {
-    await this.shutdown();
   }
 
   private async connect() {
@@ -127,11 +126,17 @@ export class PushManager implements PublicPushManager {
     this._websocket = new WebSocket("wss://push.services.mozilla.com");
     this._websocket.onmessage = async (event) => {
       this.logger.debug("Received ws message", event);
-      await this.mediator.handle(event.data);
+      // TODO: handle type
+      await this.mediator.handle(event.data as unknown as AutoConnectServerMessage);
     };
     this._websocket.onopen = async () => {
       this.wsOpenTime = new Date().getTime();
       this.logger.debug("WebSocket connection opened");
+
+      await this.mediator.send(HelloSender, {
+        uaid: this._uaid,
+        channelIds: this.subscriptionHandler.channelIds,
+      });
     };
     this._websocket.onclose = async () => {
       this._websocket = null;
@@ -146,10 +151,5 @@ export class PushManager implements PublicPushManager {
         await this.connect();
       }
     };
-
-    await this.mediator.send(HelloSender, {
-      uaid: this._uaid,
-      channelIds: this.subscriptionHandler.channelIds,
-    });
   }
 }

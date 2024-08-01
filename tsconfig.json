@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
     "incremental": true,
-    "target": "es2017",
-    "outDir": "build/main",
+    "target": "ESNext",
+    "outDir": "build/",
     "rootDir": "./",
     "moduleResolution": "node",
-    "module": "commonjs",
+    "module": "ESNext",
     "declaration": true,
     "inlineSourceMap": true,
     "esModuleInterop": true,
@@ -27,7 +27,12 @@
     "types": ["node", "jest"],
     "typeRoots": ["node_modules/@types", "src/types"]
   },
-  "include": ["src", "spec"],
-  "exclude": ["node_modules/**"],
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules/**",
+    "**/*.spec.ts"
+  ],
   "compileOnSave": false
 }
