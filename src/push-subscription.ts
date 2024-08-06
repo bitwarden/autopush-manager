@@ -16,7 +16,10 @@ import {
 } from "./crypto-types";
 import { EventManager, ListenerId } from "./event-manager";
 import { NamespacedLogger } from "./logger";
+import { RegisterHandler } from "./messages/handlers/register-handler";
 import { ClientAckCodes, ServerNotification } from "./messages/message";
+import { MessageMediator } from "./messages/message-mediator";
+import { RegisterSender } from "./messages/senders/register-sender";
 import { Storage } from "./storage";
 import {
   Uuid,
@@ -63,8 +66,9 @@ export type PublicPushSubscription = {
   };
 };
 
-type PushSubscriptionEvents = {
+export type PushSubscriptionEvents = {
   notification: (data: string | null) => void;
+  pushsubscriptionchange: (newSubscription: Jsonify<PushSubscription>) => void;
 };
 
 export type GenericPushSubscription = PushSubscription<Uuid, JoinStrings<string, Uuid>>;
@@ -81,8 +85,13 @@ export class PushSubscription<
     readonly options: PushSubscriptionOptions,
     private readonly unsubscribeCallback: () => Promise<void>,
     private readonly logger: NamespacedLogger<TNamespace>,
+    eventManager?: EventManager<PushSubscriptionEvents>,
   ) {
-    this.eventManager = new EventManager(logger.extend("EventManager"));
+    if (eventManager) {
+      // this is a reinit, we need to notify
+      eventManager.dispatchEvent("pushsubscriptionchange", this.toJSON());
+    }
+    this.eventManager = eventManager ?? new EventManager(logger.extend("EventManager"));
   }
 
   /**
@@ -153,6 +162,7 @@ export class PushSubscription<
     options: PushSubscriptionOptions,
     unsubscribeCallback: () => Promise<void>,
     logger: NamespacedLogger<string>,
+    eventManager?: EventManager<PushSubscriptionEvents>,
   ) {
     if (!options.applicationServerKey) {
       throw new Error("Only VAPID authenticated subscriptions are supported");
@@ -175,6 +185,7 @@ export class PushSubscription<
       options,
       unsubscribeCallback,
       logger.extend(channelID),
+      eventManager,
     );
   }
 
@@ -209,6 +220,18 @@ export class PushSubscription<
       unsubscribeCallback,
       logger.extend(channelID),
     );
+  }
+
+  async reInit(mediator: MessageMediator) {
+    const handler = mediator.getHandler(RegisterHandler);
+    if (!handler) {
+      throw new Error("RegisterHandler not found, cannot complete registration.");
+    }
+
+    const promise = handler.awaitRegister(this.options.applicationServerKey);
+    await mediator.send(RegisterSender, { options: this.options, eventManager: this.eventManager });
+    const pushSubscription = await promise;
+    return pushSubscription;
   }
 
   async destroy() {

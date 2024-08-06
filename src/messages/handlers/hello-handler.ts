@@ -24,9 +24,7 @@ export class HelloHandler implements MessageHandler<ServerHello> {
     if (currentUaid && currentUaid !== message.uaid) {
       // We've been assigned a new UAID. Clear out all subscriptions.
       // and re-register
-      await this.mediator.subscriptionHandler.removeAllSubscriptions();
-      // TODO renew all subscriptions
-      // TODO notify subscribers of updated endpoints. web does this through the `pushsubscriptionchange` event
+      await this.mediator.subscriptionHandler.reInitAllSubscriptions(this.mediator);
     }
 
     const pingSender = this.mediator.getSender(PingSender);

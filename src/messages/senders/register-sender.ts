@@ -1,5 +1,6 @@
+import { EventManager } from "../../event-manager";
 import { NamespacedLogger } from "../../logger";
-import { PushSubscriptionOptions } from "../../push-subscription";
+import { PushSubscriptionEvents, PushSubscriptionOptions } from "../../push-subscription";
 import { newUuid } from "../../string-manipulation";
 import { RegisterHandler } from "../handlers/register-handler";
 import { ClientRegister } from "../message";
@@ -7,7 +8,10 @@ import { MessageMediator } from "../message-mediator";
 
 import { MessageSender } from "./message-sender";
 
-type RegisterDeps = { readonly options: PushSubscriptionOptions };
+type RegisterDeps = {
+  readonly options: PushSubscriptionOptions;
+  readonly eventManager?: EventManager<PushSubscriptionEvents>;
+};
 export class RegisterSender implements MessageSender<ClientRegister, RegisterDeps> {
   constructor(
     private readonly mediator: MessageMediator,

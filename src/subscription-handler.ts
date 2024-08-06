@@ -1,7 +1,10 @@
+import { EventManager } from "./event-manager";
 import { NamespacedLogger } from "./logger";
+import { MessageMediator } from "./messages/message-mediator";
 import {
   GenericPushSubscription,
   PushSubscription,
+  PushSubscriptionEvents,
   PushSubscriptionOptions,
 } from "./push-subscription";
 import { Storage } from "./storage";
@@ -29,6 +32,7 @@ export class SubscriptionHandler {
     channelID: TChannelId,
     endpoint: string,
     options: PushSubscriptionOptions,
+    eventManager?: EventManager<PushSubscriptionEvents>,
   ) {
     this.logger.debug("Adding subscription", { channelID, endpoint, options });
 
@@ -39,6 +43,7 @@ export class SubscriptionHandler {
       options,
       () => this.unsubscribeCallback(channelID),
       this.logger,
+      eventManager,
     );
     this.subscriptions.set(channelID, subscription);
     await this.writeChannelIds();
@@ -77,10 +82,19 @@ export class SubscriptionHandler {
     this.logger.debug("Removed subscription", channelID);
   }
 
-  async removeAllSubscriptions() {
+  async reInitAllSubscriptions(mediator: MessageMediator) {
+    const existingIds = this.channelIDs;
     for (const channelID of this.subscriptions.keys()) {
       const uuid = channelID as Uuid;
-      await this.removeSubscription(uuid);
+      const subscription = this.subscriptions.get(uuid);
+      if (!subscription) {
+        this.logger.error("Subscription not found", uuid);
+        continue;
+      }
+      await subscription.reInit(mediator);
+    }
+    for (const channelID of existingIds) {
+      this.subscriptions.delete(channelID);
     }
   }
 

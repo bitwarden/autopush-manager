@@ -1,9 +1,11 @@
-import { MockProxy } from "jest-mock-extended";
+import { mock, MockProxy } from "jest-mock-extended";
 
 import { TestLogger } from "../spec/test-logger";
 import { TestStorage } from "../spec/test-storage";
 
 import { Logger, NamespacedLogger } from "./logger";
+import { MessageMediator } from "./messages/message-mediator";
+import { GenericPushSubscription } from "./push-subscription";
 import { newUuid } from "./string-manipulation";
 import { SubscriptionHandler } from "./subscription-handler";
 
@@ -26,6 +28,10 @@ describe("SubscriptionManager", () => {
           subCount++,
       },
     ] as const;
+  }
+
+  function createMockSubscription() {
+    return mock<GenericPushSubscription>();
   }
 
   const [channelID, endpoint, options] = createSubscriptionData();
@@ -114,16 +120,26 @@ describe("SubscriptionManager", () => {
     });
   });
 
-  describe("removeAllSubscriptions", () => {
+  describe("reInitAllSubscriptions", () => {
     beforeEach(async () => {
-      await manager.addSubscription(...createSubscriptionData());
-      await manager.addSubscription(...createSubscriptionData());
-      await manager.addSubscription(...createSubscriptionData());
+      manager["subscriptions"].set(newUuid(), createMockSubscription());
+      manager["subscriptions"].set(newUuid(), createMockSubscription());
+      manager["subscriptions"].set(newUuid(), createMockSubscription());
     });
 
-    it("removes all subscriptions", async () => {
-      await manager.removeAllSubscriptions();
-      expect(manager["subscriptions"].size).toBe(0);
+    it("reInits all subscriptions", async () => {
+      await manager.reInitAllSubscriptions(mock<MessageMediator>());
+      for (const subscription of manager["subscriptions"].values()) {
+        expect(subscription.reInit).toHaveBeenCalled();
+      }
+    });
+
+    it("deletes all old subscriptions", async () => {
+      const existingIds = manager.channelIDs;
+      await manager.reInitAllSubscriptions(mock<MessageMediator>());
+      for (const channelID of existingIds) {
+        expect(manager["subscriptions"].get(channelID)).toBeUndefined();
+      }
     });
   });
 
