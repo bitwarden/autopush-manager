@@ -67,11 +67,14 @@ describe("SubscriptionManager", () => {
 
     it("gets a subscription", () => {
       const subscription = manager.get(channelID);
+      if (!subscription) {
+        fail("Subscription not found");
+      }
       expect(subscription["endpoint"].toString()).toEqual(endpoint);
     });
 
-    it("throws when subscription is not found", () => {
-      expect(() => manager.get(newUuid())).toThrow("Subscription not found");
+    it("is null when subscription is not found", () => {
+      expect(manager.get(newUuid())).toBeNull();
     });
   });
 

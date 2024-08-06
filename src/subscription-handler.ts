@@ -55,12 +55,9 @@ export class SubscriptionHandler {
     return [...this.subscriptions.keys()];
   }
 
-  get(channelID: Uuid) {
+  get(channelID: Uuid): GenericPushSubscription | null {
     const sub = this.subscriptions.get(channelID);
-    if (!sub) {
-      throw new Error("Subscription not found");
-    }
-    return sub;
+    return sub ?? null;
   }
 
   getByApplicationServerKey(applicationServerKey: string): GenericPushSubscription | undefined {

@@ -121,6 +121,7 @@ export class MessageMediator {
   }
 
   ack(ack: ClientMessageAck) {
+    this.logger.debug("Queuing ack", ack);
     this.ackQueue.push(ack);
   }
 
