@@ -44,4 +44,10 @@ describe("Storage", () => {
 
     expect(baseStorage.store.get(`${namespace}:key`)).toBeUndefined();
   });
+
+  it("reads an undefined value as null", async () => {
+    baseStorage.store.set(`${namespace}:key`, undefined);
+    const result = await storage.read("key");
+    expect(result).toBeNull();
+  });
 });

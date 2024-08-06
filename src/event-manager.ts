@@ -1,12 +1,12 @@
 import type { Tagged } from "type-fest";
 
 import { NamespacedLogger } from "./logger";
-import { Guid, JoinStrings, newGuid } from "./string-manipulation";
+import { Uuid, JoinStrings, newUuid } from "./string-manipulation";
 
 // We don't need to know the type of the args, but whatever we pass in should match the callback signature
 type EventCallback = (...args: never[]) => void;
 type EventMap = { [eventName: string]: EventCallback };
-export type ListenerId = Tagged<Guid, "ListenerId">;
+export type ListenerId = Tagged<Uuid, "ListenerId">;
 
 type CallbackMap<TEventMap extends EventMap> = {
   [eventName in keyof TEventMap]: Map<ListenerId, TEventMap[eventName]>;
@@ -20,7 +20,7 @@ export class EventManager<const TEventMap extends EventMap> {
     callback: TEventMap[TEvent],
   ): ListenerId {
     this.logger.debug("Adding event listener", event);
-    const callBackId = newGuid<ListenerId>();
+    const callBackId = newUuid<ListenerId>();
 
     this.callbacksFor(event).set(callBackId, callback);
     return callBackId;

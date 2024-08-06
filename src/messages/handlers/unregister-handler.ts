@@ -1,6 +1,6 @@
 import { EventManager } from "../../event-manager";
 import { NamespacedLogger } from "../../logger";
-import { Guid } from "../../string-manipulation";
+import { Uuid } from "../../string-manipulation";
 import {
   AutoConnectServerMessage,
   ClientUnregisterCode,
@@ -13,8 +13,8 @@ import { UnregisterSender } from "../senders/unregister-sender";
 import { MessageHandler } from "./message-handler";
 
 export class UnregisterHandler implements MessageHandler<ServerUnregister> {
-  private readonly unregisteringQueue: Map<Guid, ClientUnregisterCode> = new Map();
-  private readonly eventManager: EventManager<{ unregistered: (channelId: Guid) => void }>;
+  private readonly unregisteringQueue: Map<Uuid, ClientUnregisterCode> = new Map();
+  private readonly eventManager: EventManager<{ unregistered: (channelID: Uuid) => void }>;
   constructor(
     private readonly mediator: MessageMediator,
     private readonly logger: NamespacedLogger<"UnregisterHandler">,
@@ -26,13 +26,13 @@ export class UnregisterHandler implements MessageHandler<ServerUnregister> {
     return message.messageType === "unregister";
   }
 
-  expectUnregister(channelId: Guid, code: ClientUnregisterCode) {
-    this.logger.debug("Expecting unregister", { channelId, code });
-    this.unregisteringQueue.set(channelId, code);
+  expectUnregister(channelID: Uuid, code: ClientUnregisterCode) {
+    this.logger.debug("Expecting unregister", { channelID, code });
+    this.unregisteringQueue.set(channelID, code);
 
     // If we don't get a registration in 60 seconds, clean up the queue
     setTimeout(() => {
-      this.unregisteringQueue.delete(channelId);
+      this.unregisteringQueue.delete(channelID);
     }, 60_000);
   }
 
@@ -47,13 +47,13 @@ export class UnregisterHandler implements MessageHandler<ServerUnregister> {
         this.logger.error("Server error on unregister, retrying in 60 seconds", message);
 
         const code =
-          this.unregisteringQueue.get(message.channelId) ?? ClientUnregisterCodes.USER_UNSUBSCRIBED;
-        this.unregisteringQueue.delete(message.channelId);
+          this.unregisteringQueue.get(message.channelID) ?? ClientUnregisterCodes.USER_UNSUBSCRIBED;
+        this.unregisteringQueue.delete(message.channelID);
 
         setTimeout(
           () =>
             this.mediator.send(UnregisterSender, {
-              channelId: message.channelId,
+              channelID: message.channelID,
               code,
             }),
           60_000,
@@ -63,18 +63,18 @@ export class UnregisterHandler implements MessageHandler<ServerUnregister> {
     }
 
     // Notify listeners that the channel has been unregistered
-    this.eventManager.dispatchEvent("unregistered", message.channelId);
+    this.eventManager.dispatchEvent("unregistered", message.channelID);
 
-    await this.mediator.subscriptionHandler.removeSubscription(message.channelId);
+    await this.mediator.subscriptionHandler.removeSubscription(message.channelID);
     this.logger.debug("Unregistered subscription", message);
   }
 
-  async awaitUnregister(channelId: Guid): Promise<void> {
+  async awaitUnregister(channelID: Uuid): Promise<void> {
     return new Promise((resolve) => {
       const listener = this.eventManager.addEventListener(
         "unregistered",
         (unregisteredChannelId) => {
-          if (unregisteredChannelId === channelId) {
+          if (unregisteredChannelId === channelID) {
             this.eventManager.removeEventListener("unregistered", listener);
             resolve();
           }

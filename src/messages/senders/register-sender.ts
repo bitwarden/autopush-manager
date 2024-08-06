@@ -1,6 +1,6 @@
 import { NamespacedLogger } from "../../logger";
 import { PushSubscriptionOptions } from "../../push-subscription";
-import { newGuid } from "../../string-manipulation";
+import { newUuid } from "../../string-manipulation";
 import { RegisterHandler } from "../handlers/register-handler";
 import { ClientRegister } from "../message";
 import { MessageMediator } from "../message-mediator";
@@ -22,17 +22,17 @@ export class RegisterSender implements MessageSender<ClientRegister, RegisterDep
       throw new Error("No options provided");
     }
 
-    const channelId = newGuid();
+    const channelID = newUuid();
     const message: ClientRegister = {
       messageType: "register",
-      channelId,
+      channelID,
       key: deps.options.applicationServerKey,
     };
     const registerHandler = this.mediator.getHandler(RegisterHandler);
     if (!registerHandler) {
       throw new Error("RegisterHandler not found, cannot complete registration.");
     }
-    registerHandler.expectRegister(channelId, deps.options);
+    registerHandler.expectRegister(channelID, deps.options);
     this.logger.debug("Building register message", message);
 
     return message;

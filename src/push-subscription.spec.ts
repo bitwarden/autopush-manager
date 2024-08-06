@@ -5,10 +5,10 @@ import { TestStorage } from "../spec/test-storage";
 
 import { extractPrivateJwk } from "./crypto";
 import { GenericPushSubscription, PushSubscription } from "./push-subscription";
-import { fromBufferToUrlB64, joinNamespaces, newGuid } from "./string-manipulation";
+import { fromBufferToUrlB64, joinNamespaces, newUuid } from "./string-manipulation";
 
 const data = {
-  channelId: newGuid(),
+  channelID: newUuid(),
   endpoint: "https://example.com/",
   options: {
     userVisibleOnly: true,
@@ -28,7 +28,7 @@ describe("PushSubscription", () => {
     logger = new TestLogger();
 
     pushSubscription = await PushSubscription.create(
-      data.channelId,
+      data.channelID,
       storage,
       data.endpoint,
       data.options,
@@ -49,7 +49,7 @@ describe("PushSubscription", () => {
     it("throws on missing applicationServerKey", async () => {
       await expect(
         PushSubscription.create(
-          data.channelId,
+          data.channelID,
           storage,
           data.endpoint,
           { userVisibleOnly: true, applicationServerKey: null as unknown as string },
@@ -60,11 +60,11 @@ describe("PushSubscription", () => {
     });
 
     it("writes the endpoint to storage", async () => {
-      expect(await storage.read(joinNamespaces(data.channelId, "endpoint"))).toEqual(data.endpoint);
+      expect(await storage.read(joinNamespaces(data.channelID, "endpoint"))).toEqual(data.endpoint);
     });
 
     it("writes the options to storage", async () => {
-      expect(await storage.read(joinNamespaces(data.channelId, "options"))).toEqual({
+      expect(await storage.read(joinNamespaces(data.channelID, "options"))).toEqual({
         userVisibleOnly: data.options.userVisibleOnly,
         applicationServerKey: data.options.applicationServerKey,
       });
@@ -72,32 +72,32 @@ describe("PushSubscription", () => {
 
     it("writes the keys to storage", async () => {
       await PushSubscription.create(
-        data.channelId,
+        data.channelID,
         storage,
         data.endpoint,
         data.options,
         unsubscribeCallback,
-        logger.setNamespace("test").extend(data.channelId),
+        logger.setNamespace("test").extend(data.channelID),
       );
 
       expect(storage.backing.mock.write).toHaveBeenCalledWith(
-        joinNamespaces(data.channelId, "privateEncKey"),
+        joinNamespaces(data.channelID, "privateEncKey"),
         any(),
       );
     });
 
     it("writes auth key to storage", async () => {
       await PushSubscription.create(
-        data.channelId,
+        data.channelID,
         storage,
         data.endpoint,
         data.options,
         unsubscribeCallback,
-        logger.setNamespace("test").extend(data.channelId),
+        logger.setNamespace("test").extend(data.channelID),
       );
 
       expect(storage.backing.mock.write).toHaveBeenCalledWith(
-        joinNamespaces(data.channelId, "auth"),
+        joinNamespaces(data.channelID, "auth"),
         anyString(),
       );
     });
@@ -108,16 +108,16 @@ describe("PushSubscription", () => {
       const prvJwk = await subtle.exportKey("jwk", pushSubscription["keys"].ecKeys.privateKey);
 
       const expected = new Map([
-        [joinNamespaces(data.channelId, "endpoint"), JSON.stringify(data.endpoint)],
+        [joinNamespaces(data.channelID, "endpoint"), JSON.stringify(data.endpoint)],
         [
-          joinNamespaces(data.channelId, "options"),
+          joinNamespaces(data.channelID, "options"),
           JSON.stringify({
             userVisibleOnly: data.options.userVisibleOnly,
             applicationServerKey: data.options.applicationServerKey,
           }),
         ],
-        [joinNamespaces(data.channelId, "auth"), JSON.stringify(pushSubscription.getKey("auth"))],
-        [joinNamespaces(data.channelId, "privateEncKey"), JSON.stringify(prvJwk)],
+        [joinNamespaces(data.channelID, "auth"), JSON.stringify(pushSubscription.getKey("auth"))],
+        [joinNamespaces(data.channelID, "privateEncKey"), JSON.stringify(prvJwk)],
       ]);
 
       expect(storage.backing.store).toEqual(expected);
@@ -128,10 +128,10 @@ describe("PushSubscription", () => {
 
     beforeEach(async () => {
       recoveredSubscription = await PushSubscription.recover(
-        data.channelId,
+        data.channelID,
         storage,
         unsubscribeCallback,
-        logger.setNamespace("test").extend(data.channelId),
+        logger.setNamespace("test").extend(data.channelID),
       );
     });
 
@@ -164,16 +164,16 @@ describe("PushSubscription", () => {
     it("removes all keys from storage", async () => {
       await pushSubscription.destroy();
       expect(storage.backing.mock.remove).toHaveBeenCalledWith(
-        joinNamespaces(data.channelId, "endpoint"),
+        joinNamespaces(data.channelID, "endpoint"),
       );
       expect(storage.backing.mock.remove).toHaveBeenCalledWith(
-        joinNamespaces(data.channelId, "options"),
+        joinNamespaces(data.channelID, "options"),
       );
       expect(storage.backing.mock.remove).toHaveBeenCalledWith(
-        joinNamespaces(data.channelId, "auth"),
+        joinNamespaces(data.channelID, "auth"),
       );
       expect(storage.backing.mock.remove).toHaveBeenCalledWith(
-        joinNamespaces(data.channelId, "privateEncKey"),
+        joinNamespaces(data.channelID, "privateEncKey"),
       );
     });
   });

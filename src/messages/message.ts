@@ -1,4 +1,4 @@
-import type { Guid } from "../string-manipulation";
+import type { Uuid } from "../string-manipulation";
 
 export type AutoConnectServerMessage = {
   readonly messageType: "hello" | "register" | "unregister" | "broadcast" | "notification" | "ping";
@@ -19,14 +19,14 @@ export type ServerHello = AutoConnectServerMessage &
 export type ServerRegister = AutoConnectServerMessage &
   StatusMessage & {
     readonly messageType: "register";
-    readonly channelId: Guid;
+    readonly channelID: Uuid;
     readonly pushEndpoint: string;
   };
 
 export type ServerUnregister = AutoConnectServerMessage &
   StatusMessage & {
     readonly messageType: "unregister";
-    readonly channelId: Guid;
+    readonly channelID: Uuid;
   };
 
 export type ServerBroadcast = AutoConnectServerMessage & {
@@ -36,7 +36,7 @@ export type ServerBroadcast = AutoConnectServerMessage & {
 
 export type ServerNotification = AutoConnectServerMessage & {
   readonly messageType: "notification";
-  readonly channelId: Guid;
+  readonly channelID: Uuid;
   readonly version: string;
   readonly ttl: number;
   readonly data: string | null;
@@ -65,15 +65,16 @@ export type ClientHello = AutoConnectClientMessage & {
   /** The existing Id of this user agent. Null indicates a new user agent */
   uaid: string | null;
   /** Channel Ids associated with this user agent. */
-  channelIds: Guid[];
+  channelIDs: Uuid[];
   // TODO document this
   broadcasts?: Record<string, string>;
+  use_webpush: boolean;
 };
 
 export type ClientRegister = AutoConnectClientMessage & {
   messageType: "register";
   /** The channel Id to register */
-  channelId: Guid;
+  channelID: Uuid;
   /** VAPID public key. This is currently required by this library, but optional in the spec*/
   key: string;
 };
@@ -89,7 +90,7 @@ export type ClientUnregisterCode =
 export type ClientUnregister = AutoConnectClientMessage & {
   messageType: "unregister";
   /** The channel id to unregister */
-  channelId: Guid;
+  channelID: Uuid;
   /** Unregister reason
    * - 200: User manually unsubscribed
    * - 201: Unregistered after exceeding quota
@@ -110,7 +111,7 @@ export const ClientAckCodes = Object.freeze({
 export type ClientAckCode = (typeof ClientAckCodes)[keyof typeof ClientAckCodes];
 
 export type ClientMessageAck = {
-  channelId: Guid;
+  channelID: Uuid;
   version: string;
   /** Message Acknowledged result
    * - 100: Message successfully delivered to application
@@ -135,7 +136,7 @@ export type ClientNackCode = (typeof ClientNackCodes)[keyof typeof ClientNackCod
 
 export type ClientNack = AutoConnectClientMessage & {
   messageType: "nack";
-  channelId: Guid;
+  channelID: Uuid;
   version: string;
   /** Message Not Acknowledged result
    * - 300 RESERVED

@@ -1,7 +1,7 @@
 import { EventManager } from "../../event-manager";
 import { NamespacedLogger } from "../../logger";
 import { PushSubscriptionOptions, GenericPushSubscription } from "../../push-subscription";
-import { Guid } from "../../string-manipulation";
+import { Uuid } from "../../string-manipulation";
 import { AutoConnectServerMessage, ClientUnregisterCodes, ServerRegister } from "../message";
 import { MessageMediator } from "../message-mediator";
 import { RegisterSender } from "../senders/register-sender";
@@ -10,9 +10,9 @@ import { UnregisterSender } from "../senders/unregister-sender";
 import { MessageHandler } from "./message-handler";
 
 export class RegisterHandler implements MessageHandler<ServerRegister> {
-  private readonly registeringQueue: Map<Guid, PushSubscriptionOptions> = new Map();
+  private readonly registeringQueue: Map<Uuid, PushSubscriptionOptions> = new Map();
   private readonly eventManager: EventManager<{
-    registered: (subscription: GenericPushSubscription, channelId: Guid) => void;
+    registered: (subscription: GenericPushSubscription, channelID: Uuid) => void;
   }>;
   constructor(
     private readonly mediator: MessageMediator,
@@ -25,17 +25,17 @@ export class RegisterHandler implements MessageHandler<ServerRegister> {
   }
 
   /**
-   * Informs the RegisterHandler that a registration is expected for a given channelId and provides the registration's options for when it arrives.
-   * @param channelId The channelId to expect
+   * Informs the RegisterHandler that a registration is expected for a given channelID and provides the registration's options for when it arrives.
+   * @param channelID The channelID to expect
    * @param options The options to use when registering
    */
-  expectRegister(channelId: Guid, options: PushSubscriptionOptions) {
-    this.logger.debug("Expecting register", { channelId, options });
-    this.registeringQueue.set(channelId, options);
+  expectRegister(channelID: Uuid, options: PushSubscriptionOptions) {
+    this.logger.debug("Expecting register", { channelID, options });
+    this.registeringQueue.set(channelID, options);
 
     // If we don't get a registration in 60 seconds, clean up the queue
     setTimeout(() => {
-      this.registeringQueue.delete(channelId);
+      this.registeringQueue.delete(channelID);
     }, 60_000);
   }
 
@@ -47,14 +47,14 @@ export class RegisterHandler implements MessageHandler<ServerRegister> {
         break;
       case 409: {
         this.logger.error("Conflict on register. Retrying", message);
-        await this.retryRegister(message.channelId, 0);
+        await this.retryRegister(message.channelID, 0);
         return;
       }
       case 500: {
         // FIXME: what's an appropriate retry strategy here?
         this.logger.error("Server error on register, retrying in 60 seconds", message);
         // FIXME: do we want to await the retry?
-        void this.retryRegister(message.channelId, 60_000);
+        void this.retryRegister(message.channelID, 60_000);
         return;
       }
       default: {
@@ -63,27 +63,27 @@ export class RegisterHandler implements MessageHandler<ServerRegister> {
       }
     }
 
-    const options = this.registeringQueue.get(message.channelId);
+    const options = this.registeringQueue.get(message.channelID);
     if (!options) {
-      this.logger.error("No options found for channelId, unregistering", message);
+      this.logger.error("No options found for channelID, unregistering", message);
       // Clean up the registration we can't complete
       await this.mediator.send(UnregisterSender, {
-        channelId: message.channelId,
+        channelID: message.channelID,
         code: ClientUnregisterCodes.USER_UNSUBSCRIBED, // FIXME: what code should we use here?
       });
       return;
     }
-    this.logger.debug("Removing expected registration from queue", message.channelId);
-    this.registeringQueue.delete(message.channelId);
+    this.logger.debug("Removing expected registration from queue", message.channelID);
+    this.registeringQueue.delete(message.channelID);
 
     const subscription = await this.mediator.subscriptionHandler.addSubscription(
-      message.channelId,
+      message.channelID,
       message.pushEndpoint,
       options,
     );
 
     // Notify any listeners that the registration has been completed
-    this.eventManager.dispatchEvent("registered", subscription, message.channelId);
+    this.eventManager.dispatchEvent("registered", subscription, message.channelID);
 
     this.logger.debug("Registered handled", message);
   }
@@ -99,13 +99,13 @@ export class RegisterHandler implements MessageHandler<ServerRegister> {
     });
   }
 
-  private async retryRegister(channelId: Guid, timeoutMs: number) {
-    const options = this.registeringQueue.get(channelId);
+  private async retryRegister(channelID: Uuid, timeoutMs: number) {
+    const options = this.registeringQueue.get(channelID);
     if (!options) {
-      this.logger.error("No options found for channelId, cannot retry", channelId);
+      this.logger.error("No options found for channelID, cannot retry", channelID);
       return;
     }
-    this.logger.debug("Retrying register", { channelId, options });
+    this.logger.debug("Retrying register", { channelID, options });
     const send = () => this.mediator.send(RegisterSender, { options });
     return timeoutMs <= 0
       ? await send()

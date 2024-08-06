@@ -48,7 +48,7 @@ export class Storage<const TNamespace extends string = ""> {
   }
 
   private parse<T extends JsonObject | JsonValue>(json: string | null): T | null {
-    if (json === null) {
+    if (json == null) {
       return null;
     }
     return JSON.parse(json) as T;

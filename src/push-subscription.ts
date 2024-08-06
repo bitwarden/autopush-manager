@@ -20,7 +20,7 @@ import { NamespacedLogger } from "./logger";
 import { ClientAckCodes, ServerNotification } from "./messages/message";
 import { Storage } from "./storage";
 import {
-  Guid,
+  Uuid,
   JoinStrings,
   fromUtf8ToBuffer,
   fromBufferToUtf8,
@@ -69,9 +69,9 @@ type PushSubscriptionEvents = {
   notification: (data: string | null) => void;
 };
 
-export type GenericPushSubscription = PushSubscription<Guid, JoinStrings<string, Guid>>;
+export type GenericPushSubscription = PushSubscription<Uuid, JoinStrings<string, Uuid>>;
 export class PushSubscription<
-  const TChannelId extends Guid = Guid,
+  const TChannelId extends Uuid = Uuid,
   TNamespace extends JoinStrings<string, TChannelId> = JoinStrings<"", TChannelId>,
 > implements PublicPushSubscription
 {
@@ -165,8 +165,8 @@ export class PushSubscription<
     this.logger.debug("Handled notification", message);
   }
 
-  static async create<const T extends Guid>(
-    channelId: T,
+  static async create<const T extends Uuid>(
+    channelID: T,
     storage: Storage<string>,
     endpoint: string,
     options: PushSubscriptionOptions,
@@ -176,7 +176,7 @@ export class PushSubscription<
     if (!options.applicationServerKey) {
       throw new Error("Only VAPID authenticated subscriptions are supported");
     }
-    const subscriptionStorage = storage.extend(channelId);
+    const subscriptionStorage = storage.extend(channelID);
     // Throws on invalid endpoint
     const urlEndpoint = new URL(endpoint);
 
@@ -193,17 +193,17 @@ export class PushSubscription<
       keys,
       options,
       unsubscribeCallback,
-      logger.extend(channelId),
+      logger.extend(channelID),
     );
   }
 
-  static async recover<const T extends Guid>(
-    channelId: T,
+  static async recover<const T extends Uuid>(
+    channelID: T,
     storage: Storage<string>,
     unsubscribeCallback: () => Promise<void>,
     logger: NamespacedLogger<string>,
   ) {
-    const subscriptionStorage = storage.extend(channelId);
+    const subscriptionStorage = storage.extend(channelID);
     const keys = await PushSubscription.readKeys(subscriptionStorage);
     if (!keys) {
       throw new Error("No keys found for channel");
@@ -226,7 +226,7 @@ export class PushSubscription<
       keys,
       serializedOptions,
       unsubscribeCallback,
-      logger.extend(channelId),
+      logger.extend(channelID),
     );
   }
 

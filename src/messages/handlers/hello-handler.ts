@@ -18,11 +18,12 @@ export class HelloHandler implements MessageHandler<ServerHello> {
   async handle(message: ServerHello): Promise<void> {
     this.logger.debug("Hello received", message);
 
+    await this.mediator.pushManager.completeHello(message.uaid);
+
     const currentUaid = this.mediator.pushManager.uaid;
     if (currentUaid && currentUaid !== message.uaid) {
       // We've been assigned a new UAID. Clear out all subscriptions.
       // and re-register
-      await this.mediator.pushManager.setUaid(message.uaid);
       await this.mediator.subscriptionHandler.removeAllSubscriptions();
       // TODO renew all subscriptions
       // TODO notify subscribers of updated endpoints. web does this through the `pushsubscriptionchange` event

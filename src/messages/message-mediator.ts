@@ -115,7 +115,9 @@ export class MessageMediator {
     }
 
     const message = await sender.buildMessage(deps);
-    this.pushManager.websocket.send(JSON.stringify(message));
+    const json = JSON.stringify(message);
+    this.logger.debug("Sending message", json);
+    this.pushManager.websocket.send(json);
   }
 
   ack(ack: ClientMessageAck) {

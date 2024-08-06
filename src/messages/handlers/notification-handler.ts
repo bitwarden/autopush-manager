@@ -22,12 +22,12 @@ export class NotificationHandler implements MessageHandler<ServerNotification> {
   async handle(message: ServerNotification): Promise<void> {
     this.logger.debug("Received notification", message);
 
-    const sub = this.mediator.subscriptionHandler.get(message.channelId);
+    const sub = this.mediator.subscriptionHandler.get(message.channelID);
     if (!sub) {
       this.logger.error("Received notification for unknown subscription", message);
       // FIXME: Should this be a nack?
       this.mediator.ack({
-        channelId: message.channelId,
+        channelID: message.channelID,
         version: message.version,
         code: ClientAckCodes.OTHER_FAIL,
       });
@@ -47,7 +47,7 @@ export class NotificationHandler implements MessageHandler<ServerNotification> {
     }
 
     await this.mediator.ack({
-      channelId: message.channelId,
+      channelID: message.channelID,
       version: message.version,
       code,
     });

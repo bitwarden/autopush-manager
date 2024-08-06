@@ -28,7 +28,7 @@ describe("SubscriptionManager", () => {
     ] as const;
   }
 
-  const [channelId, endpoint, options] = createSubscriptionData();
+  const [channelID, endpoint, options] = createSubscriptionData();
 
   beforeEach(async () => {
     storage = TestStorage.create();
@@ -46,21 +46,21 @@ describe("SubscriptionManager", () => {
 
   describe("addSubscription", () => {
     it("adds a subscription", async () => {
-      const subscription = await manager.addSubscription(channelId, endpoint, options);
+      const subscription = await manager.addSubscription(channelID, endpoint, options);
 
       expect(subscription).toBeDefined();
       expect(subscription["endpoint"].toString()).toEqual(endpoint);
-      expect(manager["subscriptions"].get(channelId)).toEqual(subscription);
+      expect(manager["subscriptions"].get(channelID)).toEqual(subscription);
     });
   });
 
   describe("get", () => {
     beforeEach(async () => {
-      await manager.addSubscription(channelId, endpoint, options);
+      await manager.addSubscription(channelID, endpoint, options);
     });
 
     it("gets a subscription", () => {
-      const subscription = manager.get(channelId);
+      const subscription = manager.get(channelID);
       expect(subscription["endpoint"].toString()).toEqual(endpoint);
     });
 
@@ -71,7 +71,7 @@ describe("SubscriptionManager", () => {
 
   describe("getByApplicationServerKey", () => {
     beforeEach(async () => {
-      await manager.addSubscription(channelId, endpoint, options);
+      await manager.addSubscription(channelID, endpoint, options);
     });
 
     it("gets a subscription by application server key", () => {
@@ -91,17 +91,17 @@ describe("SubscriptionManager", () => {
 
   describe("removeSubscription", () => {
     beforeEach(async () => {
-      await manager.addSubscription(channelId, endpoint, options);
+      await manager.addSubscription(channelID, endpoint, options);
     });
 
     it("removes a subscription", async () => {
-      await manager.removeSubscription(channelId);
-      expect(manager["subscriptions"].get(channelId)).toBeUndefined();
+      await manager.removeSubscription(channelID);
+      expect(manager["subscriptions"].get(channelID)).toBeUndefined();
     });
 
     it("does nothing when subscription is not found", async () => {
       await manager.removeSubscription(newGuid());
-      expect(manager["subscriptions"].get(channelId)).toBeDefined();
+      expect(manager["subscriptions"].get(channelID)).toBeDefined();
     });
 
     it("warns when subscription is not found", async () => {
@@ -127,15 +127,15 @@ describe("SubscriptionManager", () => {
     });
   });
 
-  describe("channelIds", () => {
+  describe("channelIDs", () => {
     const data = [createSubscriptionData(), createSubscriptionData(), createSubscriptionData()];
     beforeEach(async () => {
       await Promise.all(data.map((data) => manager.addSubscription(...data)));
     });
 
     it("gets all channel ids", () => {
-      expect(manager.channelIds).toHaveLength(data.length);
-      expect(manager.channelIds).toEqual(expect.arrayContaining(data.map(([id]) => id)));
+      expect(manager.channelIDs).toHaveLength(data.length);
+      expect(manager.channelIDs).toEqual(expect.arrayContaining(data.map(([id]) => id)));
     });
   });
 });

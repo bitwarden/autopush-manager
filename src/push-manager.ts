@@ -14,7 +14,7 @@ import {
   PushSubscriptionOptions,
 } from "./push-subscription";
 import { PublicStorage, Storage } from "./storage";
-import { Guid } from "./string-manipulation";
+import { Uuid } from "./string-manipulation";
 import { SubscriptionHandler } from "./subscription-handler";
 
 export interface PublicPushManager {
@@ -25,6 +25,7 @@ export interface PublicPushManager {
 export class PushManager implements PublicPushManager {
   private _uaid: string | null = null;
   private _websocket: WebSocket | null = null;
+  private _helloResolve: (() => void) | null = null;
   private reconnect = true;
   private wsOpenTime: number | null = null;
   private mediator!: MessageMediator; // This is assigned in the create method
@@ -41,6 +42,16 @@ export class PushManager implements PublicPushManager {
   async setUaid(value: string) {
     this._uaid = value;
     await this.storage.write("uaid", value);
+  }
+
+  async completeHello(uaid: string) {
+    if (this._uaid !== uaid) {
+      await this.setUaid(uaid);
+    }
+    setTimeout(() => {
+      this._helloResolve?.();
+    }, 1000);
+    // this._helloResolve?.();
   }
 
   get websocket() {
@@ -73,14 +84,14 @@ export class PushManager implements PublicPushManager {
     return await promise;
   }
 
-  async unsubscribe(channelId: Guid) {
+  async unsubscribe(channelID: Uuid) {
     if (!this.subscriptionHandler || !this._websocket) {
       throw new Error("class not initialized");
     }
 
-    const promise = this.mediator.getHandler(UnregisterHandler)?.awaitUnregister(channelId);
+    const promise = this.mediator.getHandler(UnregisterHandler)?.awaitUnregister(channelID);
     await this.mediator.send(UnregisterSender, {
-      channelId,
+      channelID,
       code: ClientUnregisterCodes.USER_UNSUBSCRIBED,
     });
 
@@ -93,7 +104,7 @@ export class PushManager implements PublicPushManager {
     const manager = new PushManager(storage, logger);
     const subscriptionHandler = await SubscriptionHandler.create(
       storage,
-      (channelId: Guid) => manager.unsubscribe(channelId),
+      (channelID: Uuid) => manager.unsubscribe(channelID),
       new NamespacedLogger(logger, "SubscriptionHandler"),
     );
     const mediator = new MessageMediator(manager, subscriptionHandler, logger);
@@ -123,22 +134,36 @@ export class PushManager implements PublicPushManager {
       throw new Error("WebSocket already connected");
     }
 
+    const helloCompleted = new Promise<void>((resolve) => {
+      this._helloResolve = resolve;
+    });
     this._websocket = new WebSocket("wss://push.services.mozilla.com");
     this._websocket.onmessage = async (event) => {
-      this.logger.debug("Received ws message", event);
+      // this.logger.debug("Received ws message", event);
       // TODO: handle type
-      await this.mediator.handle(event.data as unknown as AutoConnectServerMessage);
+      let messageData: AutoConnectServerMessage;
+      if (typeof event.data === "string") {
+        messageData = JSON.parse(event.data) as AutoConnectServerMessage;
+      } else if (event.data instanceof ArrayBuffer) {
+        messageData = JSON.parse(Buffer.from(event.data).toString()) as AutoConnectServerMessage;
+      } else {
+        this.logger.error("Unexpected message data type", event.data);
+        return;
+      }
+      await this.mediator.handle(messageData);
     };
+    this._websocket.once("open", async () => {
+      await this.mediator.send(HelloSender, {
+        uaid: this._uaid,
+        channelIDs: this.subscriptionHandler.channelIDs,
+      });
+    });
     this._websocket.onopen = async () => {
       this.wsOpenTime = new Date().getTime();
       this.logger.debug("WebSocket connection opened");
-
-      await this.mediator.send(HelloSender, {
-        uaid: this._uaid,
-        channelIds: this.subscriptionHandler.channelIds,
-      });
     };
-    this._websocket.onclose = async () => {
+    this._websocket.onclose = async (e) => {
+      this.logger.debug("WebSocket connection closed", e.reason, e.code);
       this._websocket = null;
       const timeOpen = this.wsOpenTime == null ? 0 : new Date().getTime() - this.wsOpenTime;
       this.wsOpenTime = null;
@@ -148,8 +173,11 @@ export class PushManager implements PublicPushManager {
 
       // TODO: implement a backoff strategy
       if (this.reconnect) {
-        await this.connect();
+        setTimeout(() => this.connect(), 1000);
+        // await this.connect();
       }
     };
+
+    await helloCompleted;
   }
 }

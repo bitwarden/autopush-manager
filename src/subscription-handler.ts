@@ -5,19 +5,19 @@ import {
   PushSubscriptionOptions,
 } from "./push-subscription";
 import { Storage } from "./storage";
-import { Guid } from "./string-manipulation";
+import { Uuid } from "./string-manipulation";
 
 export class SubscriptionHandler {
-  private readonly subscriptions: Map<Guid, GenericPushSubscription> = new Map();
+  private readonly subscriptions: Map<Uuid, GenericPushSubscription> = new Map();
   private constructor(
     private readonly storage: Storage,
-    private readonly unsubscribeCallback: (channelId: Guid) => Promise<void>,
+    private readonly unsubscribeCallback: (channelID: Uuid) => Promise<void>,
     private readonly logger: NamespacedLogger<"SubscriptionHandler">,
   ) {}
 
   static async create(
     storage: Storage,
-    unsubscribeCallback: (channelId: Guid) => Promise<void>,
+    unsubscribeCallback: (channelID: Uuid) => Promise<void>,
     logger: NamespacedLogger<"SubscriptionHandler">,
   ) {
     const handler = new SubscriptionHandler(storage, unsubscribeCallback, logger);
@@ -25,33 +25,33 @@ export class SubscriptionHandler {
     return handler;
   }
 
-  async addSubscription<TChannelId extends Guid>(
-    channelId: TChannelId,
+  async addSubscription<TChannelId extends Uuid>(
+    channelID: TChannelId,
     endpoint: string,
     options: PushSubscriptionOptions,
   ) {
-    this.logger.debug("Adding subscription", { channelId, endpoint, options });
+    this.logger.debug("Adding subscription", { channelID, endpoint, options });
 
     const subscription = await PushSubscription.create(
-      channelId,
+      channelID,
       this.storage,
       endpoint,
       options,
-      () => this.unsubscribeCallback(channelId),
+      () => this.unsubscribeCallback(channelID),
       this.logger,
     );
-    this.subscriptions.set(channelId, subscription);
+    this.subscriptions.set(channelID, subscription);
     await this.writeChannelIds();
-    this.logger.debug("Added subscription", { channelId, endpoint, options });
+    this.logger.debug("Added subscription", { channelID, endpoint, options });
     return subscription;
   }
 
-  get channelIds() {
+  get channelIDs() {
     return [...this.subscriptions.keys()];
   }
 
-  get(channelId: Guid) {
-    const sub = this.subscriptions.get(channelId);
+  get(channelID: Uuid) {
+    const sub = this.subscriptions.get(channelID);
     if (!sub) {
       throw new Error("Subscription not found");
     }
@@ -64,33 +64,33 @@ export class SubscriptionHandler {
     );
   }
 
-  async removeSubscription(channelId: Guid) {
-    this.logger.debug("Removing subscription", channelId);
-    const subscription = this.subscriptions.get(channelId);
+  async removeSubscription(channelID: Uuid) {
+    this.logger.debug("Removing subscription", channelID);
+    const subscription = this.subscriptions.get(channelID);
     if (!subscription) {
-      this.logger.warn("Subscription not found", channelId);
+      this.logger.warn("Subscription not found", channelID);
       return;
     }
     await subscription.destroy();
-    this.subscriptions.delete(channelId);
+    this.subscriptions.delete(channelID);
     await this.writeChannelIds();
-    this.logger.debug("Removed subscription", channelId);
+    this.logger.debug("Removed subscription", channelID);
   }
 
   async removeAllSubscriptions() {
-    for (const channelId of this.subscriptions.keys()) {
-      const guid = channelId as Guid;
+    for (const channelID of this.subscriptions.keys()) {
+      const guid = channelID as Uuid;
       await this.removeSubscription(guid);
     }
   }
 
   private async loadSubscriptions() {
-    const channelIds = await this.storage.read<string[]>("channelIds");
-    if (!channelIds) {
+    const channelIDs = await this.storage.read<string[]>("channelIDs");
+    if (!channelIDs) {
       return;
     }
-    for (const channelId of channelIds) {
-      const guid = channelId as Guid;
+    for (const channelID of channelIDs) {
+      const guid = channelID as Uuid;
       const storage = this.storage.extend(guid);
       try {
         const subscription = await PushSubscription.recover(
@@ -107,6 +107,6 @@ export class SubscriptionHandler {
   }
 
   private async writeChannelIds() {
-    await this.storage.write("channelIds", this.channelIds);
+    await this.storage.write("channelIDs", this.channelIDs);
   }
 }

@@ -1,3 +1,5 @@
+import * as crypto from "crypto";
+
 import type { Tagged } from "type-fest";
 
 import { isNode, _global } from "./util";
@@ -31,13 +33,9 @@ export function joinNamespaces<
 }
 
 // ref: http://stackoverflow.com/a/2117523/1090359
-export type Guid = Tagged<string, "Guid">;
-export function newGuid<T extends Guid>(): T {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === "x" ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  }) as T;
+export type Uuid = Tagged<string, "Uuid">;
+export function newUuid<T extends Uuid>(): T {
+  return crypto.randomUUID() as T;
 }
 
 export function fromBufferToB64(buffer: ArrayBuffer): string {

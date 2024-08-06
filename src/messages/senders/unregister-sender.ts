@@ -1,12 +1,12 @@
 import { NamespacedLogger } from "../../logger";
-import { Guid } from "../../string-manipulation";
+import { Uuid } from "../../string-manipulation";
 import { UnregisterHandler } from "../handlers/unregister-handler";
 import { ClientUnregister, ClientUnregisterCode } from "../message";
 import { MessageMediator } from "../message-mediator";
 
 import { MessageSender } from "./message-sender";
 
-type UnregisterDependencies = { readonly channelId: Guid; readonly code: ClientUnregisterCode };
+type UnregisterDependencies = { readonly channelID: Uuid; readonly code: ClientUnregisterCode };
 
 export class UnregisterSender implements MessageSender<ClientUnregister, UnregisterDependencies> {
   constructor(
@@ -17,7 +17,7 @@ export class UnregisterSender implements MessageSender<ClientUnregister, Unregis
   async buildMessage(deps: UnregisterDependencies): Promise<ClientUnregister> {
     const message: ClientUnregister = {
       messageType: "unregister",
-      channelId: deps.channelId,
+      channelID: deps.channelID,
       code: deps.code,
     };
     const unRegisterHandler = this.mediator.getHandler(UnregisterHandler);
@@ -26,7 +26,7 @@ export class UnregisterSender implements MessageSender<ClientUnregister, Unregis
         "UnregisterHandler not found, cannot inform handler of intended unregister code.",
       );
     }
-    unRegisterHandler?.expectUnregister(deps.channelId, deps.code);
+    unRegisterHandler?.expectUnregister(deps.channelID, deps.code);
 
     this.logger.debug("Building unregister message", message);
     return message;
