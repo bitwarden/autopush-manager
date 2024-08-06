@@ -1,28 +1,37 @@
-const storage = new Map();
+const fs = require("fs");
+
+class Storage {
+  #store;
+  constructor() {
+    if (!fs.existsSync("storage.json")) {
+      fs.writeFileSync("storage.json", JSON.stringify([]), "utf8");
+    }
+    const storedMap = JSON.parse(fs.readFileSync("storage.json", "utf8"));
+    this.#store = new Map(storedMap);
+  }
+  async read(key) {
+    return this.#store.get(key);
+  }
+
+  async write(key, value) {
+    this.#store.set(key, value);
+    const toStore = JSON.stringify([...this.#store.entries()], null, 2);
+    fs.writeFileSync("storage.json", toStore, "utf8");
+  }
+
+  async remove(key) {
+    this.#store.delete(key);
+    const toStore = JSON.stringify([...this.#store.entries()]);
+    fs.writeFileSync("storage.json", toStore, "utf8");
+  }
+}
+
 const logger = console;
+const storage = new Storage();
 
 require("../build/src/index")
-  .createPushManager(
-    {
-      write: async (key, value) => {
-        storage.set(key, value);
-        return Promise.resolve();
-      },
-      read: async (key) => {
-        return Promise.resolve(storage.get(key));
-      },
-      remove: async (key) => {
-        storage.delete(key);
-        return Promise.resolve();
-      },
-    },
-    logger,
-  )
+  .createPushManager(storage, logger)
   .then(async (pushManager) => {
-    // wait 5 seconds
-    await new Promise((resolve) => {
-      setTimeout(resolve, 5000);
-    });
     const subscription = await pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey:
@@ -30,7 +39,6 @@ require("../build/src/index")
     });
 
     logger.log("Subscription created", JSON.stringify(subscription));
-
     subscription.addEventListener("notification", (event) => {
       logger.log("Received notification", event);
     });
