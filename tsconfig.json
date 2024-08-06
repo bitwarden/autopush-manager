@@ -5,7 +5,7 @@
     "outDir": "build/",
     "rootDir": "./",
     "moduleResolution": "node",
-    "module": "ESNext",
+    "module": "CommonJS",
     "declaration": true,
     "inlineSourceMap": true,
     "esModuleInterop": true,
