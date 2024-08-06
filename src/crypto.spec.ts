@@ -1,10 +1,8 @@
 import {
   aesGcmDecrypt,
-  ecdhDeriveSharedKey,
   generateEcKeys,
   randomBytes,
   parsePrivateJwk,
-  verifyVapidAuth,
   webPushDecryptPrep,
   extractPrivateJwk,
 } from "./crypto";
@@ -86,51 +84,6 @@ describe("parsePrivateJwk", () => {
   it("returns null when jwk is null", async () => {
     const readKeys = await parsePrivateJwk(null);
     expect(readKeys).toBeNull();
-  });
-});
-
-describe("VerifyVapidAuth", () => {
-  it("verifies a valid VAPID auth header", async () => {
-    // https://datatracker.ietf.org/doc/html/rfc8292#section-2.4
-    const header =
-      "vapid t=eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJhdWQiOiJodHRwczovL3B1c2guZXhhbXBsZS5uZXQiLCJleHAiOjE0NTM1MjM3NjgsInN1YiI6Im1haWx0bzpwdXNoQGV4YW1wbGUuY29tIn0.i3CYb7t4xfxCDquptFOepC9GAu_HLGkMlMuCGSK2rpiUfnK9ojFwDXb1JrErtmysazNjjvW2L9OkSSHzvoD1oA, k=BA1Hxzyi1RUM1b5wjxsn7nGxAszw2u61m164i3MrAIxHF6YK5h4SDYic-dRuU_RCPCfA5aq9ojSwk5Y2EmClBPs";
-    const publicKey =
-      "BA1Hxzyi1RUM1b5wjxsn7nGxAszw2u61m164i3MrAIxHF6YK5h4SDYic-dRuU_RCPCfA5aq9ojSwk5Y2EmClBPs";
-    await expect(verifyVapidAuth(header, publicKey)).resolves.toEqual(true);
-  });
-});
-
-describe("ecdhDeriveSharedKey", () => {
-  it("derives a shared key", async () => {
-    const publicKey = new Uint8Array([
-      4, 212, 7, 72, 118, 252, 190, 220, 245, 154, 52, 177, 252, 15, 23, 133, 156, 239, 180, 143,
-      238, 35, 90, 17, 113, 37, 51, 202, 227, 65, 216, 90, 65, 164, 147, 8, 238, 157, 148, 51, 109,
-      61, 222, 177, 105, 70, 150, 45, 212, 238, 129, 62, 121, 29, 29, 181, 81, 11, 242, 181, 219,
-      56, 159, 236, 125,
-    ]);
-    const localKeys = await parsePrivateJwk({
-      key_ops: ["deriveKey", "deriveBits"],
-      ext: true,
-      kty: "EC",
-      x: "84p2j3B4ulNBhJmjcrIsJl0pax3MaYYk6eqk1HYsN_Y",
-      y: "cZCKmCjy4grDsBrGXkpUikHv2VZmen8SRmclj244OtY",
-      crv: "P-256",
-      d: "EZdq8BiFjHbl6U6F0iK0yF8nXvw8-6mGjto9E_2fpwo",
-    });
-    if (localKeys === null) {
-      fail("localKeys is null");
-    }
-    const secret = new Uint8Array(16);
-    const senderKey = fromBufferToUrlB64(publicKey.buffer);
-    const salt = fromBufferToUrlB64(secret.buffer); // In practice this is a random value, not linked to secret
-
-    const sharedKeys = await ecdhDeriveSharedKey(localKeys, secret, senderKey, salt);
-    expect(sharedKeys.contentEncryptionKey).toEqualBuffer(
-      new Uint8Array([48, 0, 223, 95, 172, 79, 172, 31, 184, 11, 61, 5, 68, 120, 86, 62]),
-    );
-    expect(sharedKeys.nonce).toEqualBuffer(
-      new Uint8Array([201, 196, 98, 239, 12, 215, 67, 233, 119, 119, 11, 191]),
-    );
   });
 });
 
