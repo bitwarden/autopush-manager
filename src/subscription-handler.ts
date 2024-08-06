@@ -79,8 +79,8 @@ export class SubscriptionHandler {
 
   async removeAllSubscriptions() {
     for (const channelID of this.subscriptions.keys()) {
-      const guid = channelID as Uuid;
-      await this.removeSubscription(guid);
+      const uuid = channelID as Uuid;
+      await this.removeSubscription(uuid);
     }
   }
 
@@ -90,16 +90,16 @@ export class SubscriptionHandler {
       return;
     }
     for (const channelID of channelIDs) {
-      const guid = channelID as Uuid;
-      const storage = this.storage.extend(guid);
+      const uuid = channelID as Uuid;
+      const storage = this.storage.extend(uuid);
       try {
         const subscription = await PushSubscription.recover(
-          guid,
+          uuid,
           storage,
-          () => this.unsubscribeCallback(guid),
-          this.logger.extend(guid),
+          () => this.unsubscribeCallback(uuid),
+          this.logger.extend(uuid),
         );
-        this.subscriptions.set(guid, subscription);
+        this.subscriptions.set(uuid, subscription);
       } catch (e) {
         this.logger.error("Failed to recover subscription", e);
       }

@@ -8,14 +8,14 @@ import {
   fromUtf8ToBuffer,
 } from "./string-manipulation";
 
-describe("newGuid", () => {
-  it("returns a new guid", () => {
+describe("newUuid", () => {
+  it("returns a new uuid", () => {
     expect(newUuid()).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
     );
   });
 
-  it("creates a new guid each time", () => {
+  it("creates a new uuid each time", () => {
     expect(newUuid()).not.toEqual(newUuid());
   });
 });

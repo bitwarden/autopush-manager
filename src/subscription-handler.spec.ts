@@ -105,11 +105,11 @@ describe("SubscriptionManager", () => {
     });
 
     it("warns when subscription is not found", async () => {
-      const guid = newUuid();
-      await manager.removeSubscription(guid);
+      const uuid = newUuid();
+      await manager.removeSubscription(uuid);
       expect(loggerMock.warn).toHaveBeenCalledWith(
         expect.stringContaining("Subscription not found"),
-        guid,
+        uuid,
       );
     });
   });
