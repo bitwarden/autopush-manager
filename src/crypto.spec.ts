@@ -5,7 +5,7 @@ import {
   randomBytes,
   parsePrivateJwk,
   verifyVapidAuth,
-  webPushSharedKey,
+  webPushDecryptPrep,
   extractPrivateJwk,
 } from "./crypto";
 import { UncompressedPublicKey } from "./crypto-types";
@@ -135,7 +135,7 @@ describe("ecdhDeriveSharedKey", () => {
   });
 });
 
-describe("webPushSharedKey", () => {
+describe("webPushDecryptPrep", () => {
   // https://datatracker.ietf.org/doc/html/rfc8291#section-5
   it("recreates the RFC example", async () => {
     const authenticationSecret = "BTBZMqHH6r4Tts7J_aSIgg";
@@ -149,7 +149,7 @@ describe("webPushSharedKey", () => {
     );
     const contentStream =
       "DGv6ra1nlYgDCS1FRnbzlwAAEABBBP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A_yl95bQpu6cVPTpK4Mqgkf1CXztLVBSt2Ks3oZwbuwXPXLWyouBWLVWGNWQexSgSxsj_Qulcy4a-fN";
-    const result = await webPushSharedKey(
+    const result = await webPushDecryptPrep(
       { keys: receiverKeys, secret: fromUrlB64ToBuffer(authenticationSecret) },
       {
         publicKey: fromBufferToUrlB64(senderKeys.uncompressedPublicKey),

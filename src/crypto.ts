@@ -3,7 +3,7 @@ import * as crypto from "crypto";
 import type { Jsonify } from "type-fest";
 
 import { CsprngArray, ECKeyPair, UncompressedPublicKey } from "./crypto-types";
-import { fromBufferToUrlB64, fromUrlB64ToBuffer, fromUtf8ToBuffer } from "./string-manipulation";
+import { fromUrlB64ToBuffer, fromUtf8ToBuffer } from "./string-manipulation";
 
 const subtle = crypto.webcrypto.subtle;
 
@@ -195,45 +195,34 @@ async function ecVerify(data: string, signature: string, publicKey: string): Pro
 }
 
 /**
- * Derives a shared secret following older versions of RFC-8291 and RFC-8188
+ * Derives a shared secret following RFC-8291 and RFC-8188
  * https://datatracker.ietf.org/doc/html/rfc8291
  * https://datatracker.ietf.org/doc/html/rfc8188
  *
- * @remarks @see {@link webPushSharedKey} for the up-to-date implementation
- *
- * @param ecKeys Local EC key pair
- * @param secret Secret shared with the remote server, used as a salt in deriving a shared prk, which is then expanded into a content encryption key and nonce
- * @param otherPublicKey The remote server's public key
- * @param salt The salt used in the HKDF expansion of the content encryption key and nonce
- * @returns
-
- * @param userAgentData 
- * @param serverData 
- * @returns 
+ * @param userAgentData Local EC key pair and secret
+ * @param userAgentData.keys Local EC key pair
+ * @param userAgentData.secret Secret shared with the remote server
+ * @param serverData The server's public key and encrypted content
+ * @param content The encrypted content stream. This stream should include the salt, record size, server public key, and encrypted content
+ * @returns The derived content encryption key and nonce
  */
-export async function webPushSharedKey(
+export async function webPushDecryptPrep(
   userAgentData: {
     keys: ECKeyPair;
     secret: ArrayBuffer;
   },
-  serverData: {
-    publicKey: string;
-    content: ArrayBuffer;
-  },
+  content: ArrayBuffer,
 ): Promise<{
   contentEncryptionKey: ArrayBuffer;
   nonce: ArrayBuffer;
   encryptedContent: ArrayBuffer;
 }> {
-  const header = splitContent(new Uint8Array(serverData.content));
-  if (fromBufferToUrlB64(header.serverPublicKey) !== serverData.publicKey) {
-    throw new Error("Server Public key mismatch");
-  }
+  const header = splitContent(new Uint8Array(content));
 
   const userAgentPublicKey = userAgentData.keys.uncompressedPublicKey;
   const senderPublicKey = await subtle.importKey(
     "raw",
-    fromUrlB64ToBuffer(serverData.publicKey),
+    header.serverPublicKey,
     { name: "ECDH", namedCurve: "P-256" },
     true,
     [],
@@ -258,11 +247,7 @@ export async function webPushSharedKey(
       name: "HKDF",
       hash: "SHA-256",
       salt: userAgentData.secret,
-      info: createInfo(
-        "WebPush: info",
-        userAgentPublicKey,
-        fromUrlB64ToBuffer(serverData.publicKey),
-      ),
+      info: createInfo("WebPush: info", userAgentPublicKey, header.serverPublicKey),
     },
     ecdhSecretKey,
     256,
@@ -304,7 +289,7 @@ export async function webPushSharedKey(
  * https://datatracker.ietf.org/doc/html/draft-ietf-webpush-encryption-04
  * https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-encryption-encoding-03
  *
- * @remarks @see {@link webPushSharedKey} for the up-to-date implementation
+ * @remarks @see {@link webPushDecryptPrep} for the up-to-date implementation
  *
  * @param ecKeys Local EC key pair
  * @param secret Secret shared with the remote server, used as a salt in deriving a shared prk, which is then expanded into a content encryption key and nonce

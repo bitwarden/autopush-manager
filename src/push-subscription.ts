@@ -2,12 +2,11 @@ import type { Jsonify } from "type-fest";
 
 import {
   aesGcmDecrypt,
-  ecdhDeriveSharedKey,
   generateEcKeys,
   randomBytes,
   parsePrivateJwk,
-  verifyVapidAuth,
   extractPrivateJwk,
+  webPushDecryptPrep,
 } from "./crypto";
 import {
   CsprngArray,
@@ -22,7 +21,6 @@ import { Storage } from "./storage";
 import {
   Uuid,
   JoinStrings,
-  fromUtf8ToBuffer,
   fromBufferToUtf8,
   fromBufferToUrlB64,
   fromUrlB64ToBuffer,
@@ -104,13 +102,14 @@ export class PushSubscription<
     this.logger.debug("Handling notification", message);
 
     // FIXME: Do we need to validate authorization, or is this handled by autopush?
-    if (
-      !message.headers ||
-      !message.headers["Authorization"] ||
-      !(await verifyVapidAuth(this.options.applicationServerKey, message.headers["Authorization"]))
-    ) {
-      throw ClientAckCodes.OTHER_FAIL;
-    }
+    // if (
+    //   !message.headers ||
+    //   !message.headers["Authorization"] ||
+    //   !(await verifyVapidAuth(this.options.applicationServerKey, message.headers["Authorization"]))
+    // ) {
+    //   this.logger.error("Invalid authorization header", message);
+    //   throw ClientAckCodes.OTHER_FAIL;
+    // }
 
     if (!message.data) {
       this.logger.debug("Notification has no data", message);
@@ -119,47 +118,29 @@ export class PushSubscription<
     }
 
     // Decrypt Message
-
     if (
-      message.headers["Content-Encoding"] !== "aesgcm" ||
-      !message.headers["Encryption"] ||
-      !message.headers["Crypto-Key"]
+      !message.headers ||
+      (message.headers["encoding"] !== "aes128gcm" &&
+        message.headers["Content-Encoding"] !== "aes128gcm")
     ) {
+      this.logger.error("Unsupported encoding", message);
       throw ClientAckCodes.DECRYPT_FAIL;
     }
-
-    const encryptionHeader = message.headers["Encryption"];
-    const salt = encryptionHeader.substring(encryptionHeader.indexOf("salt=") + 5);
-    const cryptoKeyHeader = message.headers["Crypto-Key"];
-    const senderPublicKey = cryptoKeyHeader
-      .split(";")
-      .find((v) => v.startsWith("dh="))
-      ?.substring(3);
-
-    if (!senderPublicKey) {
-      throw ClientAckCodes.DECRYPT_FAIL;
-    }
-
-    const { contentEncryptionKey, nonce } = await ecdhDeriveSharedKey(
-      this.keys.ecKeys,
-      this.keys.auth,
-      senderPublicKey,
-      salt,
-    );
 
     let decryptedContent: ArrayBuffer;
     try {
-      decryptedContent = await aesGcmDecrypt(
-        fromUtf8ToBuffer(message.data),
-        contentEncryptionKey,
-        nonce,
+      const { contentEncryptionKey, nonce, encryptedContent } = await webPushDecryptPrep(
+        { keys: this.keys.ecKeys, secret: this.keys.auth },
+        fromUrlB64ToBuffer(message.data),
       );
+
+      // TODO Remove padding
+
+      decryptedContent = await aesGcmDecrypt(encryptedContent, contentEncryptionKey, nonce);
     } catch (e) {
       this.logger.error("Error decrypting notification", e);
       throw ClientAckCodes.DECRYPT_FAIL;
     }
-
-    // TODO Remove padding
 
     this.eventManager.dispatchEvent("notification", fromBufferToUtf8(decryptedContent));
     this.logger.debug("Handled notification", message);
