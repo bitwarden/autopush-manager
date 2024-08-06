@@ -94,6 +94,7 @@ export class SubscriptionHandler {
       await subscription.reInit(mediator);
     }
     for (const channelID of existingIds) {
+      await this.subscriptions.get(channelID)?.destroy();
       this.subscriptions.delete(channelID);
     }
   }
