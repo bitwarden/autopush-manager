@@ -106,13 +106,12 @@ export class SubscriptionHandler {
     }
     for (const channelID of channelIDs) {
       const uuid = channelID as Uuid;
-      const storage = this.storage.extend(uuid);
       try {
         const subscription = await PushSubscription.recover(
           uuid,
-          storage,
+          this.storage,
           () => this.unsubscribeCallback(uuid),
-          this.logger.extend(uuid),
+          this.logger,
         );
         this.subscriptions.set(uuid, subscription);
       } catch (e) {
