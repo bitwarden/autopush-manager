@@ -4,7 +4,7 @@ import { TestLogger } from "../spec/test-logger";
 import { TestStorage } from "../spec/test-storage";
 
 import { Logger, NamespacedLogger } from "./logger";
-import { newGuid } from "./string-manipulation";
+import { newUuid } from "./string-manipulation";
 import { SubscriptionHandler } from "./subscription-handler";
 
 describe("SubscriptionManager", () => {
@@ -17,7 +17,7 @@ describe("SubscriptionManager", () => {
   let subCount = 4;
   function createSubscriptionData() {
     return [
-      newGuid(),
+      newUuid(),
       "https://example.com/" + subCount,
       {
         userVisibleOnly: true,
@@ -65,7 +65,7 @@ describe("SubscriptionManager", () => {
     });
 
     it("throws when subscription is not found", () => {
-      expect(() => manager.get(newGuid())).toThrow("Subscription not found");
+      expect(() => manager.get(newUuid())).toThrow("Subscription not found");
     });
   });
 
@@ -100,12 +100,12 @@ describe("SubscriptionManager", () => {
     });
 
     it("does nothing when subscription is not found", async () => {
-      await manager.removeSubscription(newGuid());
+      await manager.removeSubscription(newUuid());
       expect(manager["subscriptions"].get(channelID)).toBeDefined();
     });
 
     it("warns when subscription is not found", async () => {
-      const guid = newGuid();
+      const guid = newUuid();
       await manager.removeSubscription(guid);
       expect(loggerMock.warn).toHaveBeenCalledWith(
         expect.stringContaining("Subscription not found"),

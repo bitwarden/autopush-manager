@@ -28,11 +28,11 @@
     "typeRoots": ["node_modules/@types", "src/types"]
   },
   "include": [
-    "src"
+    "src",
+    "spec"
   ],
   "exclude": [
     "node_modules/**",
-    "**/*.spec.ts"
   ],
   "compileOnSave": false
 }

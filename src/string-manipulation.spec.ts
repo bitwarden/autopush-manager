@@ -1,7 +1,7 @@
 import {
   fromB64toUrlB64,
   fromUrlB64ToB64,
-  newGuid,
+  newUuid,
   fromB64ToBuffer,
   fromBufferToB64,
   fromBufferToUtf8,
@@ -10,13 +10,13 @@ import {
 
 describe("newGuid", () => {
   it("returns a new guid", () => {
-    expect(newGuid()).toMatch(
+    expect(newUuid()).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
     );
   });
 
   it("creates a new guid each time", () => {
-    expect(newGuid()).not.toEqual(newGuid());
+    expect(newUuid()).not.toEqual(newUuid());
   });
 });
 

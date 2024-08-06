@@ -142,18 +142,11 @@ describe("webPushDecryptPrep", () => {
       "q1dXpw3UpT5VOmu_cf_v6ih07Aems3njxI-JWgLcM94",
       "BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4",
     );
-    const senderKeys = await importKeys(
-      "yfWPiYE-n46HLnH0KqZOF1fJJU3MYrct3AELtAQ-oRw",
-      "BP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A8",
-    );
     const contentStream =
       "DGv6ra1nlYgDCS1FRnbzlwAAEABBBP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A_yl95bQpu6cVPTpK4Mqgkf1CXztLVBSt2Ks3oZwbuwXPXLWyouBWLVWGNWQexSgSxsj_Qulcy4a-fN";
     const result = await webPushDecryptPrep(
       { keys: receiverKeys, secret: fromUrlB64ToBuffer(authenticationSecret) },
-      {
-        publicKey: fromBufferToUrlB64(senderKeys.uncompressedPublicKey),
-        content: fromUrlB64ToBuffer(contentStream),
-      },
+      fromUrlB64ToBuffer(contentStream),
     );
 
     expect(result.contentEncryptionKey).toEqualBuffer(fromUrlB64ToBuffer("oIhVW04MRdy2XN9CiKLxTg"));
