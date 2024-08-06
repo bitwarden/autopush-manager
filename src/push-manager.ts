@@ -140,7 +140,6 @@ export class PushManager implements PublicPushManager {
     this._websocket = new WebSocket("wss://push.services.mozilla.com");
     this._websocket.onmessage = async (event) => {
       // this.logger.debug("Received ws message", event);
-      // TODO: handle type
       let messageData: AutoConnectServerMessage;
       if (typeof event.data === "string") {
         messageData = JSON.parse(event.data) as AutoConnectServerMessage;

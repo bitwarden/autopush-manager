@@ -121,7 +121,6 @@ describe("ecdhDeriveSharedKey", () => {
       fail("localKeys is null");
     }
     const secret = new Uint8Array(16);
-    // TODO: convert to string
     const senderKey = fromBufferToUrlB64(publicKey.buffer);
     const salt = fromBufferToUrlB64(secret.buffer); // In practice this is a random value, not linked to secret
 
