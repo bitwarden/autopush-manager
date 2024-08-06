@@ -2,7 +2,6 @@
   "name": "autopush-manager",
   "version": "0.1.0",
   "description": "A module to subscribe to Mozilla Autopush and receive notifications",
-  "main": "index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "build:watch": "tsc -p tsconfig.json --watch",
@@ -16,11 +15,18 @@
     "test:watch:all": "jest --watchAll"
   },
   "keywords": [],
-  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bitwarden/autopush-manager.git"
+  },
+  "author": "Bitwarden Inc. <hello@bitwarden.com> (https://bitwarden.com)",
   "license": "GPL-3.0-or-later",
   "engines": {
     "node": "~20",
     "npm": "~10"
+  },
+  "lint-staged": {
+    "*": "prettier --cache --write --ignore-unknown"
   },
   "devDependencies": {
     "@eslint/js": "^9.7.0",
@@ -30,9 +36,11 @@
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.29.1",
+    "husky": "^9.1.4",
     "jest-environment-jsdom": "^29.7.0",
     "jest-junit": "^16.0.0",
     "jest-mock-extended": "^3.0.7",
+    "lint-staged": "^15.2.8",
     "npm-run-all": "^4.1.5",
     "prettier": "^3.3.3",
     "ts-jest": "^29.2.3",
