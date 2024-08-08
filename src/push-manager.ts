@@ -22,6 +22,14 @@ export interface PublicPushManager {
   destroy(): Promise<void>;
 }
 
+type PushManagerOptions = {
+  autopushUrl: string;
+};
+
+const defaultPushManagerOptions: PushManagerOptions = Object.freeze({
+  autopushUrl: "wss://push.services.mozilla.com",
+});
+
 export class PushManager implements PublicPushManager {
   private _uaid: string | null = null;
   private _websocket: WebSocket | null = null;
@@ -33,6 +41,7 @@ export class PushManager implements PublicPushManager {
   private constructor(
     private readonly storage: Storage,
     private readonly logger: Logger,
+    private readonly options: PushManagerOptions,
   ) {}
 
   get uaid() {
@@ -98,10 +107,14 @@ export class PushManager implements PublicPushManager {
     await promise;
   }
 
-  static async create(externalStorage: PublicStorage, externalLogger: Logger) {
+  static async create(
+    externalStorage: PublicStorage,
+    externalLogger: Logger,
+    options: PushManagerOptions = defaultPushManagerOptions,
+  ) {
     const storage = new Storage(externalStorage);
     const logger = new TimedLogger(externalLogger);
-    const manager = new PushManager(storage, logger);
+    const manager = new PushManager(storage, logger, options);
     const subscriptionHandler = await SubscriptionHandler.create(
       storage,
       (channelID: Uuid) => manager.unsubscribe(channelID),
@@ -137,7 +150,7 @@ export class PushManager implements PublicPushManager {
     const helloCompleted = new Promise<void>((resolve) => {
       this._helloResolve = resolve;
     });
-    this._websocket = new WebSocket("wss://push.services.mozilla.com");
+    this._websocket = new WebSocket(this.options.autopushUrl);
     this._websocket.onmessage = async (event) => {
       // this.logger.debug("Received ws message", event);
       let messageData: AutoConnectServerMessage;
