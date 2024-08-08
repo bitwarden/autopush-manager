@@ -7,12 +7,14 @@ import {
   parsePrivateJwk,
   extractPrivateJwk,
   webPushDecryptPrep,
+  removePadding,
 } from "./crypto";
 import {
   CsprngArray,
   ECKeyPair,
   EncodedSymmetricKey,
   EncodedUncompressedPublicKey,
+  UncompressedPublicKey,
 } from "./crypto-types";
 import { EventManager, ListenerId } from "./event-manager";
 import { NamespacedLogger } from "./logger";
@@ -34,9 +36,11 @@ type SubscriptionKeys = {
   ecKeys: ECKeyPair;
 };
 
-type TKey<T extends "auth" | "p256dh"> = T extends "auth"
+type TKey<T extends "auth" | "p256dh" | "p256dhBuffer"> = T extends "auth"
   ? EncodedSymmetricKey
-  : EncodedUncompressedPublicKey;
+  : T extends "p256dh"
+    ? EncodedUncompressedPublicKey
+    : UncompressedPublicKey;
 
 const STORAGE_KEYS = Object.freeze({
   endpoint: "endpoint",
@@ -79,6 +83,7 @@ export class PushSubscription<
 {
   private readonly eventManager: EventManager<PushSubscriptionEvents>;
   constructor(
+    readonly channelID: TChannelId,
     private readonly storage: Storage<TNamespace>,
     private readonly endpoint: URL,
     private readonly keys: SubscriptionKeys,
@@ -136,16 +141,17 @@ export class PushSubscription<
       throw ClientAckCodes.DECRYPT_FAIL;
     }
 
-    let decryptedContent: ArrayBuffer;
+    let decryptedContent: Uint8Array;
     try {
       const { contentEncryptionKey, nonce, encryptedContent } = await webPushDecryptPrep(
         { keys: this.keys.ecKeys, secret: this.keys.auth },
         fromUrlB64ToBuffer(message.data),
       );
 
-      // TODO Remove padding
+      const decrypted = await aesGcmDecrypt(encryptedContent, contentEncryptionKey, nonce);
 
-      decryptedContent = await aesGcmDecrypt(encryptedContent, contentEncryptionKey, nonce);
+      // Remove padding
+      decryptedContent = removePadding(new Uint8Array(decrypted), true); // always last record: only one supported
     } catch (e) {
       this.logger.error("Error decrypting notification", e);
       throw ClientAckCodes.DECRYPT_FAIL;
@@ -179,6 +185,7 @@ export class PushSubscription<
 
     const keys = await PushSubscription.generateKeys(subscriptionStorage);
     return new PushSubscription(
+      channelID,
       subscriptionStorage,
       urlEndpoint,
       keys,
@@ -213,6 +220,7 @@ export class PushSubscription<
     const urlEndpoint = new URL(endpoint);
 
     return new PushSubscription(
+      channelID,
       subscriptionStorage,
       urlEndpoint,
       keys,
@@ -281,11 +289,14 @@ export class PushSubscription<
     };
   }
 
-  getKey<const T extends "auth" | "p256dh">(name: T): TKey<T> {
-    if (name === "auth") {
-      return fromBufferToUrlB64<TKey<T>>(this.keys.auth);
-    } else {
-      return fromBufferToUrlB64<TKey<T>>(this.keys.ecKeys.uncompressedPublicKey);
+  getKey<const T extends "auth" | "p256dh" | "p256dhBuffer">(name: T): TKey<T> {
+    switch (name) {
+      case "auth":
+        return fromBufferToUrlB64(this.keys.auth) as TKey<T>;
+      case "p256dh":
+        return fromBufferToUrlB64(this.keys.ecKeys.uncompressedPublicKey) as TKey<T>;
+      default:
+        return this.keys.ecKeys.uncompressedPublicKey as TKey<T>;
     }
   }
 
