@@ -2,6 +2,7 @@ import { WebSocketServer, WebSocket } from "ws";
 
 import {
   AutoConnectClientMessage,
+  ClientAck,
   ClientHello,
   ClientRegister,
   ServerHello,
@@ -12,13 +13,19 @@ import {
 import { fromBufferToUtf8, newUuid, Uuid } from "../src/string-manipulation";
 
 export const defaultUaid = "5f0774ac-09a3-45d9-91e4-f4aaebaeec72";
-const defaultHelloHandler = (
+export const helloHandlerWithUaid =
+  (uaid: string) =>
+  (client: TestWebSocketClient, message: ClientHello, server: TestWebSocketServer) =>
+    helloHandler(client, message, server, uaid);
+const defaultHelloHandler = helloHandlerWithUaid(defaultUaid);
+const helloHandler = (
   client: TestWebSocketClient,
   message: ClientHello,
   server: TestWebSocketServer,
+  uaidToAssign: string,
 ) => {
   // Identify the client
-  const identifiedClient = new IdentifiedWebSocketClient(client, defaultUaid);
+  const identifiedClient = new IdentifiedWebSocketClient(client, uaidToAssign);
   server.identifiedClients.push(identifiedClient);
 
   // Make sure we track channels for this client
@@ -29,7 +36,7 @@ const defaultHelloHandler = (
   // Send a response
   const response: ServerHello = {
     messageType: "hello",
-    uaid: defaultUaid,
+    uaid: uaidToAssign,
     useWebPush: true,
     status: 200,
     // broadcasts: {},
@@ -70,7 +77,15 @@ const defaultUnregisterHandler = (
   client.ws.send(JSON.stringify(response));
 };
 
-const defaultServerPingHandler = (client: IdentifiedWebSocketClient) => {
+const defaultAckHandler = (_client: IdentifiedWebSocketClient, _message: ClientAck) => {
+  // Do nothing
+};
+
+const defaultNackHandler = (_client: IdentifiedWebSocketClient, _message: ClientAck) => {
+  // Do nothing
+};
+
+const defaultPingHandler = (client: IdentifiedWebSocketClient) => {
   const response: ServerPing = {
     messageType: "ping",
   };
@@ -83,12 +98,15 @@ export class TestWebSocketServer {
   readonly clients: TestWebSocketClient[] = [];
   readonly identifiedClients: IdentifiedWebSocketClient[] = [];
 
-  helloHandler = defaultHelloHandler;
-  registerHandler = defaultRegisterHandler;
-  unregisterHandler = defaultUnregisterHandler;
-  serverPingHandler = defaultServerPingHandler;
+  helloHandler!: typeof defaultHelloHandler;
+  registerHandler!: typeof defaultRegisterHandler;
+  unregisterHandler!: typeof defaultUnregisterHandler;
+  ackHandler!: typeof defaultAckHandler;
+  nackHandler!: typeof defaultNackHandler;
+  serverPingHandler!: typeof defaultPingHandler;
 
   constructor(port: number) {
+    this.useDefaultHandlers();
     this.server = new WebSocketServer({ port });
     this.channelToClientMap = new Map();
 
@@ -120,6 +138,15 @@ export class TestWebSocketServer {
         }
       });
     });
+  }
+
+  useDefaultHandlers() {
+    this.helloHandler = defaultHelloHandler;
+    this.registerHandler = defaultRegisterHandler;
+    this.unregisterHandler = defaultUnregisterHandler;
+    this.ackHandler = defaultAckHandler;
+    this.nackHandler = defaultNackHandler;
+    this.serverPingHandler = defaultPingHandler;
   }
 
   closeClients() {
@@ -223,6 +250,12 @@ export class TestWebSocketServer {
         break;
       case "unregister":
         this.unregisterHandler(client, message as ClientRegister, this);
+        break;
+      case "ack":
+        this.ackHandler(client, message as ClientAck);
+        break;
+      case "nack":
+        this.nackHandler(client, message as ClientAck);
         break;
       case "ping":
         this.serverPingHandler(client);

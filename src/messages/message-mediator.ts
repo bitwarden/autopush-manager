@@ -21,18 +21,18 @@ import { PingSender } from "./senders/ping-sender";
 import { RegisterSender } from "./senders/register-sender";
 import { UnregisterSender } from "./senders/unregister-sender";
 
-const ACK_INTERVAL = 30_000; // 30 seconds
 
 export class MessageMediator {
   private handlers: MessageHandler<AutoConnectServerMessage>[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TODO: get rid of this any
   private senders: MessageSender<AutoConnectClientMessage, any>[];
   private ackInterval: NodeJS.Timeout | null = null;
-  private ackQueue: ClientMessageAck[] = [];
+  private readonly ackQueue: ClientMessageAck[] = [];
   private ackSender: AckSender;
   constructor(
     readonly pushManager: PushManager,
     readonly subscriptionHandler: SubscriptionHandler,
+    options: { ackIntervalMs: number },
     private readonly logger: Logger,
   ) {
     this.handlers = [
@@ -54,7 +54,7 @@ export class MessageMediator {
     // Ack is separate because acks are grouped to reduce server load
     this.ackSender = new AckSender(new NamespacedLogger(logger, "AckSender"));
 
-    this.ackInterval = setInterval(() => this.sendAck(), ACK_INTERVAL);
+    this.ackInterval = setInterval(() => this.sendAck(), options.ackIntervalMs);
   }
 
   destroy() {
@@ -136,8 +136,7 @@ export class MessageMediator {
       return;
     }
 
-    const updates = this.ackQueue.slice();
-    this.ackQueue = [];
+    const updates = this.ackQueue.splice(0, this.ackQueue.length);
 
     const message = await this.ackSender.buildMessage({ updates });
     this.pushManager.websocket.send(JSON.stringify(message));

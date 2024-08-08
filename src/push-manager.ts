@@ -23,12 +23,28 @@ export interface PublicPushManager {
 }
 
 type PushManagerOptions = {
-  autopushUrl: string;
+  /** The Url to connect to. Defaults to `wss://push.services.mozilla.com` */
+  autopushUrl?: string;
+  /** The interval between ACK messages. Defaults to 30 seconds (30000) */
+  ackIntervalMs?: number;
+  /** A method which is awaited prior to reconnecting, should the websocket be disconnected. Defaults to a constant timeout of 1 second */
+  reconnectDelay?: () => Promise<void>;
 };
 
-const defaultPushManagerOptions: PushManagerOptions = Object.freeze({
+const defaultPushManagerOptions: Required<PushManagerOptions> = Object.freeze({
   autopushUrl: "wss://push.services.mozilla.com",
+  ackIntervalMs: 30_000, // 30 seconds
+  reconnectDelay: async () => {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  },
 });
+
+function populateOptions(userOptions: PushManagerOptions): Required<PushManagerOptions> {
+  return {
+    ...defaultPushManagerOptions,
+    ...userOptions,
+  };
+}
 
 export class PushManager implements PublicPushManager {
   private _uaid: string | null = null;
@@ -41,7 +57,7 @@ export class PushManager implements PublicPushManager {
   private constructor(
     private readonly storage: Storage,
     private readonly logger: Logger,
-    private readonly options: PushManagerOptions,
+    private readonly options: Required<PushManagerOptions>,
   ) {}
 
   get uaid() {
@@ -112,15 +128,16 @@ export class PushManager implements PublicPushManager {
     externalLogger: Logger,
     options: PushManagerOptions = defaultPushManagerOptions,
   ) {
+    const finalOptions = populateOptions(options);
     const storage = new Storage(externalStorage);
     const logger = new TimedLogger(externalLogger);
-    const manager = new PushManager(storage, logger, options);
+    const manager = new PushManager(storage, logger, finalOptions);
     const subscriptionHandler = await SubscriptionHandler.create(
       storage,
       (channelID: Uuid) => manager.unsubscribe(channelID),
       new NamespacedLogger(logger, "SubscriptionHandler"),
     );
-    const mediator = new MessageMediator(manager, subscriptionHandler, logger);
+    const mediator = new MessageMediator(manager, subscriptionHandler, finalOptions, logger);
 
     // Assign the circular dependencies
     manager.mediator = mediator;
@@ -140,6 +157,7 @@ export class PushManager implements PublicPushManager {
   async destroy() {
     this.reconnect = false;
     this._websocket?.close();
+    this.mediator.destroy();
   }
 
   private async connect() {
@@ -185,7 +203,7 @@ export class PushManager implements PublicPushManager {
 
       // TODO: implement a backoff strategy
       if (this.reconnect) {
-        setTimeout(() => this.connect(), 1000);
+        void this.options.reconnectDelay().then(() => this.connect());
         // await this.connect();
       }
     };

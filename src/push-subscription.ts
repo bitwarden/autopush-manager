@@ -135,7 +135,8 @@ export class PushSubscription<
     if (
       !message.headers ||
       (message.headers["encoding"] !== "aes128gcm" &&
-        message.headers["Content-Encoding"] !== "aes128gcm")
+        message.headers["Content-Encoding"] !== "aes128gcm" &&
+        message.headers["content-encoding"] !== "aes128gcm")
     ) {
       this.logger.error("Unsupported encoding", message);
       throw ClientAckCodes.DECRYPT_FAIL;
