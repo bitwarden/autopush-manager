@@ -42,6 +42,25 @@ export async function aesGcmDecrypt(
   return decrypted;
 }
 
+export function removePadding(data: Uint8Array, isLastRecord: boolean = true) {
+  if (data.findIndex((v) => v !== 0) === -1) {
+    throw new Error("All zero aes128gcm decrypted content");
+  }
+  const expectedPaddingByte = isLastRecord ? 2 : 1;
+  let paddingIndex;
+  for (let i = data.length - 1; i >= 0; i--) {
+    if (data[i] === 0) {
+      continue;
+    }
+    if (data[i] !== expectedPaddingByte) {
+      throw new Error("Incorrect padding byte");
+    }
+    paddingIndex = i;
+    break;
+  }
+  return data.slice(0, paddingIndex);
+}
+
 /**
  * Creates a new Elliptic Curve key pair using the P-256 curve
  * @returns The new key pair
@@ -143,10 +162,60 @@ export async function webPushDecryptPrep(
 }> {
   const header = splitContent(new Uint8Array(content));
 
-  const userAgentPublicKey = userAgentData.keys.uncompressedPublicKey;
-  const senderPublicKey = await subtle.importKey(
+  const { contentEncryptionKey, nonce } = await deriveKeyAndNonce(
+    {
+      privateKey: userAgentData.keys.privateKey,
+      publicKey: userAgentData.keys.uncompressedPublicKey,
+    },
+    {
+      publicKey: header.serverPublicKey,
+    },
+    userAgentData.secret,
+    header.salt,
+  );
+
+  return {
+    contentEncryptionKey,
+    nonce,
+    encryptedContent: header.encryptedContent,
+  };
+}
+
+/** Derives a content encryption key and nonce for the given set of public/private keys.
+ * This function follows the WebPush encryption scheme as defined in RFC-8291.
+ *
+ * @param userAgentKeys The public and private keys of the user agent
+ * @param userAgentKeys.privateKey The private key of the user agent. Optional: One of either userAgentKeys.privateKey or serverKeys.privateKey must be provided
+ * @param userAgentKeys.publicKey The public key of the user agent
+ * @param serverKeys The public and private keys of the server
+ * @param serverKeys.privateKey The private key of the server. Optional: One of either userAgentKeys.privateKey or serverKeys.privateKey must be provided
+ * @param serverKeys.publicKey The public key of the server
+ * @param secret The shared secret between the user agent and the server
+ * @param salt The salt used to derive the content encryption key and nonce
+ * @returns The derived content encryption key and nonce
+ */
+export async function deriveKeyAndNonce(
+  userAgentKeys: {
+    privateKey?: CryptoKey;
+    publicKey: UncompressedPublicKey;
+  },
+  serverKeys: {
+    privateKey?: CryptoKey;
+    publicKey: UncompressedPublicKey;
+  },
+  secret: ArrayBuffer,
+  salt: ArrayBuffer,
+) {
+  const privateKey = userAgentKeys.privateKey ?? serverKeys.privateKey;
+  // Use the opposite public key of the private key being used
+  const publicKeyUrlB64 =
+    privateKey === userAgentKeys.privateKey ? serverKeys.publicKey : userAgentKeys.publicKey;
+  if (!privateKey) {
+    throw new Error("No private key provided");
+  }
+  const publicKey = await subtle.importKey(
     "raw",
-    header.serverPublicKey,
+    publicKeyUrlB64,
     { name: "ECDH", namedCurve: "P-256" },
     true,
     [],
@@ -155,9 +224,9 @@ export async function webPushDecryptPrep(
   const ecdhSecret = await subtle.deriveBits(
     {
       name: "ECDH",
-      public: senderPublicKey,
+      public: publicKey,
     },
-    userAgentData.keys.privateKey as CryptoKey,
+    privateKey as CryptoKey,
     256,
   );
 
@@ -170,8 +239,8 @@ export async function webPushDecryptPrep(
     {
       name: "HKDF",
       hash: "SHA-256",
-      salt: userAgentData.secret,
-      info: createInfo("WebPush: info", userAgentPublicKey, header.serverPublicKey),
+      salt: secret,
+      info: createInfo("WebPush: info", userAgentKeys.publicKey, serverKeys.publicKey),
     },
     ecdhSecretKey,
     256,
@@ -184,7 +253,7 @@ export async function webPushDecryptPrep(
       name: "HKDF",
       hash: "SHA-256",
       info: createInfo("Content-Encoding: aes128gcm"),
-      salt: header.salt,
+      salt: salt,
     },
     prkKey,
     128,
@@ -195,7 +264,7 @@ export async function webPushDecryptPrep(
       name: "HKDF",
       hash: "SHA-256",
       info: createInfo("Content-Encoding: nonce"),
-      salt: header.salt,
+      salt: salt,
     },
     prkKey,
     96,
@@ -204,7 +273,6 @@ export async function webPushDecryptPrep(
   return {
     contentEncryptionKey,
     nonce,
-    encryptedContent: header.encryptedContent,
   };
 }
 
@@ -249,14 +317,14 @@ function createInfo(type: string, ...values: ArrayBuffer[]): Uint8Array {
 function splitContent(content: Uint8Array): {
   salt: Uint8Array;
   recordSize: number;
-  serverPublicKey: Uint8Array;
+  serverPublicKey: UncompressedPublicKey;
   encryptedContent: Uint8Array;
 } {
   const keyIdSize = new DataView(content.slice(20).buffer).getUint8(0);
   return {
     salt: new Uint8Array(content.slice(0, 16)),
     recordSize: new DataView(content.slice(16, 20).buffer).getUint32(0, false),
-    serverPublicKey: new Uint8Array(content.slice(21, 21 + keyIdSize)),
+    serverPublicKey: new Uint8Array(content.slice(21, 21 + keyIdSize)) as UncompressedPublicKey,
     encryptedContent: new Uint8Array(content.slice(21 + keyIdSize)),
   };
 }

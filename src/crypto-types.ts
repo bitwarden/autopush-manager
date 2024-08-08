@@ -6,7 +6,7 @@ export type ECKeyPair = {
   privateKey: CryptoKey;
   uncompressedPublicKey: UncompressedPublicKey;
 };
-export type UncompressedPublicKey = Tagged<ArrayBuffer, "UncompressedPublicKey">;
+export type UncompressedPublicKey = Tagged<Uint8Array, "UncompressedPublicKey">;
 export type EncodedPrivateKey = Tagged<JsonWebKey, "EncodedPrivateKey">;
 export type EncodedUncompressedPublicKey = Tagged<string, "UncompressedPublicKey">;
 export type EncodedSymmetricKey = Tagged<string, "EncodedSymmetricKey">;

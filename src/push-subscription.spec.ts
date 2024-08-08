@@ -1,5 +1,6 @@
 import { any, anyString } from "jest-mock-extended";
 
+import { applicationPublicKey } from "../spec/constants";
 import { TestLogger } from "../spec/test-logger";
 import { TestStorage } from "../spec/test-storage";
 
@@ -12,8 +13,7 @@ const data = {
   endpoint: "https://example.com/",
   options: {
     userVisibleOnly: true,
-    applicationServerKey:
-      "BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4",
+    applicationServerKey: applicationPublicKey,
   },
 };
 

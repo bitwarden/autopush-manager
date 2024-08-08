@@ -1,4 +1,11 @@
 import {
+  applicationPrivateKey,
+  applicationPublicKey,
+  applicationPublicKeyX,
+  applicationPublicKeyY,
+} from "../spec/constants";
+
+import {
   aesGcmDecrypt,
   generateEcKeys,
   randomBytes,
@@ -48,20 +55,17 @@ describe("generateEcKeys", () => {
 
 describe("extractPrivateJwk", () => {
   it("writes EC keys", async () => {
-    const keys = await importKeys(
-      "q1dXpw3UpT5VOmu_cf_v6ih07Aems3njxI-JWgLcM94",
-      "BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4",
-    );
+    const keys = await importKeys(applicationPrivateKey, applicationPublicKey);
     const jwk = await extractPrivateJwk(keys);
 
     expect(jwk).toEqual({
       kty: "EC",
       crv: "P-256",
-      d: "q1dXpw3UpT5VOmu_cf_v6ih07Aems3njxI-JWgLcM94",
+      d: applicationPrivateKey,
       ext: true,
       key_ops: ["deriveKey", "deriveBits"],
-      x: "JXGyvs3942BVGq8e0PTNNmwRzr5VX4m8t7GGpTM5FzE",
-      y: "aOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4",
+      x: applicationPublicKeyX,
+      y: applicationPublicKeyY,
     });
   });
 });
@@ -91,10 +95,7 @@ describe("webPushDecryptPrep", () => {
   // https://datatracker.ietf.org/doc/html/rfc8291#section-5
   it("recreates the RFC example", async () => {
     const authenticationSecret = "BTBZMqHH6r4Tts7J_aSIgg";
-    const receiverKeys = await importKeys(
-      "q1dXpw3UpT5VOmu_cf_v6ih07Aems3njxI-JWgLcM94",
-      "BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4",
-    );
+    const receiverKeys = await importKeys(applicationPrivateKey, applicationPublicKey);
     const contentStream =
       "DGv6ra1nlYgDCS1FRnbzlwAAEABBBP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A_yl95bQpu6cVPTpK4Mqgkf1CXztLVBSt2Ks3oZwbuwXPXLWyouBWLVWGNWQexSgSxsj_Qulcy4a-fN";
     const result = await webPushDecryptPrep(

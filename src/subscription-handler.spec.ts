@@ -1,5 +1,6 @@
 import { mock, MockProxy } from "jest-mock-extended";
 
+import { applicationPublicKey } from "../spec/constants";
 import { TestLogger } from "../spec/test-logger";
 import { TestStorage } from "../spec/test-storage";
 
@@ -23,9 +24,7 @@ describe("SubscriptionManager", () => {
       "https://example.com/" + subCount,
       {
         userVisibleOnly: true,
-        applicationServerKey:
-          "BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw" +
-          subCount++,
+        applicationServerKey: applicationPublicKey.substring(0, 65) + subCount++,
       },
     ] as const;
   }
