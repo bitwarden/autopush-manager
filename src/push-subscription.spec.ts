@@ -103,7 +103,7 @@ describe("PushSubscription", () => {
     });
 
     it("store has all the values", async () => {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const subtle = require("crypto").webcrypto.subtle;
       const prvJwk = await subtle.exportKey("jwk", pushSubscription["keys"].ecKeys.privateKey);
 
