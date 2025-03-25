@@ -1,5 +1,6 @@
 import { joinNamespaces, type JoinStrings } from "./string-manipulation";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface Logger extends Pick<Console, "debug" | "info" | "warn" | "error"> {}
 
 export class TimedLogger implements Logger {

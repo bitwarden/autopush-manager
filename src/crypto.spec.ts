@@ -109,7 +109,7 @@ describe("webPushDecryptPrep", () => {
 });
 
 async function importKeys(b64urlPrivateKey: string, b64urlPublicKey: string) {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const subtle = require("crypto").webcrypto.subtle;
 
   // const priv = fromUrlB64ToBuffer(b64urlPrivateKey)

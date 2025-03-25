@@ -2,15 +2,8 @@
   "version": "0.2",
   "language": "en",
   // words - list of words to be always considered correct
-  "words": [
-    "ACK'd",
-    "Csprng",
-    "Uaid",
-    "unregistering"
-  ],
+  "words": ["ACK'd", "Csprng", "Uaid", "unregistering"],
   // flagWords - list of words to be always considered incorrect
   // This is useful for offensive words and common spelling errors.
-  "flagWords": [
-    "channelId"
-  ]
+  "flagWords": ["channelId"]
 }
