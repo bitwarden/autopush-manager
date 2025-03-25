@@ -5,5 +5,4 @@
 # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
 # Default file owners
-#* @bitwarden/team-platform-dev
-* @MGibson1
+* @bitwarden/team-platform-dev @bitwarden/dept-architecture
