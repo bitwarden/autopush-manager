@@ -39,6 +39,8 @@ export class UnregisterHandler implements MessageHandler<ServerUnregister> {
   async handle(message: ServerUnregister): Promise<void> {
     this.logger.debug("Received unregister", message);
 
+    // These error codes are lifted from possible responses to unregister requests
+    // see https://github.com/mozilla-services/autopush-rs/blob/e4c153e7dece3e7cc938ca672bd9cab547bdd7e8/autoconnect/autoconnect-ws/autoconnect-ws-sm/src/identified/on_client_msg.rs#L116
     switch (message.status) {
       case 200:
         break;
