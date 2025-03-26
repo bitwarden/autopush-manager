@@ -33,7 +33,7 @@ class Storage {
 const logger = console;
 const storage = new Storage();
 
-require("../build/src/index")
+require("../../build/src/index")
     .createPushManager(storage, logger)
     .then(async (pushManager) => {
         const subscription = await pushManager.subscribe({

@@ -47,4 +47,4 @@ storybook-static
 apps/**/config/local.json
 
 # example storage
-examples/storage.json
+examples/**/storage.json
