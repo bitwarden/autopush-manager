@@ -1,6 +1,6 @@
 const { pathsToModuleNameMapper } = require("ts-jest");
 
-const { compilerOptions } = require("./tsconfig.spec.json");
+const { compilerOptions } = require("./tsconfig.json");
 
 /** @type {import('jest').Config} */
 module.exports = {
@@ -25,8 +25,6 @@ module.exports = {
     "^.+\\.tsx?$": [
       "ts-jest",
       {
-        // Jest does not use tsconfig.spec.json by default
-        tsconfig: "<rootDir>/tsconfig.spec.json",
         // Further workaround for memory leak, recommended here:
         // https://github.com/kulshekhar/ts-jest/issues/1967#issuecomment-697494014
         // Makes tests run faster and reduces size/rate of leak, but loses typechecking on test code
