@@ -128,16 +128,16 @@ export class PushManager implements PublicPushManager {
     externalLogger: Logger,
     options: PushManagerOptions = defaultPushManagerOptions,
   ) {
-    const finalOptions = populateOptions(options);
+    const resolvedOptions = populateOptions(options);
     const storage = new Storage(externalStorage);
     const logger = new TimedLogger(externalLogger);
-    const manager = new PushManager(storage, logger, finalOptions);
+    const manager = new PushManager(storage, logger, resolvedOptions);
     const subscriptionHandler = await SubscriptionHandler.create(
       storage,
       (channelID: Uuid) => manager.unsubscribe(channelID),
       new NamespacedLogger(logger, "SubscriptionHandler"),
     );
-    const mediator = new MessageMediator(manager, subscriptionHandler, finalOptions, logger);
+    const mediator = new MessageMediator(manager, subscriptionHandler, resolvedOptions, logger);
 
     // Assign the circular dependencies
     manager.mediator = mediator;
@@ -203,8 +203,7 @@ export class PushManager implements PublicPushManager {
 
       // TODO: implement a backoff strategy
       if (this.reconnect) {
-        void this.options.reconnectDelay().then(() => this.connect());
-        // await this.connect();
+        await this.options.reconnectDelay().then(() => this.connect());
       }
     };
 
