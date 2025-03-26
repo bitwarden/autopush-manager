@@ -19,7 +19,7 @@ export class EventManager<const TEventMap extends EventMap> {
     event: TEvent,
     callback: TEventMap[TEvent],
   ): ListenerId {
-    this.logger.debug("Adding event listener", event);
+    this.logger.debug("Adding event listener for:", event);
     const callBackId = newUuid<ListenerId>();
 
     this.callbacksFor(event).set(callBackId, callback);
@@ -30,7 +30,7 @@ export class EventManager<const TEventMap extends EventMap> {
     event: TEvent,
     ...args: Parameters<TEventMap[TEvent]>
   ) {
-    this.logger.debug("Dispatching event", event);
+    this.logger.debug("Dispatching event:", event);
     const callbacks = this.callbacksFor(event);
     for (const callback of callbacks.values()) {
       callback(...args);
@@ -38,7 +38,7 @@ export class EventManager<const TEventMap extends EventMap> {
   }
 
   removeEventListener(event: keyof TEventMap, callbackId: ListenerId) {
-    this.logger.debug("Removing event listener", event);
+    this.logger.debug("Removing event listener for:", event);
     this.callbacksFor(event).delete(callbackId);
   }
 

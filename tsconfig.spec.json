@@ -1,5 +1,0 @@
-{
-  "extends": "./tsconfig.json",
-  "include": ["src", "spec"],
-  "files": ["./test.setup.ts"]
-}
