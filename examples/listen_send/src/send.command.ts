@@ -1,35 +1,44 @@
 import * as crypto from "crypto";
 
-import { randomBytes, generateEcKeys, deriveKeyAndNonce, parsePrivateJwk } from "autopush-manager/src/crypto";
+import {
+  randomBytes,
+  generateEcKeys,
+  deriveKeyAndNonce,
+  parsePrivateJwk,
+} from "autopush-manager/src/crypto";
 import { UncompressedPublicKey } from "autopush-manager/src/crypto-types";
-import { Logger } from 'autopush-manager/src/index'
+import { Logger } from "autopush-manager/src/index";
 
 import { Storage } from "./storage";
-import { fromBufferToUrlB64, fromUrlB64ToBuffer, fromUtf8ToBuffer } from './string-manipulation';
+import { fromBufferToUrlB64, fromUrlB64ToBuffer, fromUtf8ToBuffer } from "./string-manipulation";
 
 /**
  * Sends a message to a subscription
- * 
+ *
  * # Notes
  * All of the code in this command would be server-side in a real application.
- * 
+ *
  * Also, you should probably use packages to do all of this rather than implement it yourself. It's implemented here just to show how it works in a more linear fashion.
  */
 export class SendCommand {
   constructor(
     private readonly logger: Logger,
     private readonly storage: Storage,
-  ){
+  ) {}
 
-  }
-
-  async send(message: string, subscription: {endpoint: string, p256dh: string, auth: string}, vapidKeys: {public: string, private: string}, subject: string, ttl: number): Promise<void> {
+  async send(
+    message: string,
+    subscription: { endpoint: string; p256dh: string; auth: string },
+    vapidKeys: { public: string; private: string },
+    subject: string,
+    ttl: number,
+  ): Promise<void> {
     this.logger.info("Encrypting payload...");
     const encryptedMessage = await aes128GcmEncrypt(
       message,
       subscription.p256dh,
       subscription.auth,
-    );    
+    );
 
     this.logger.info("Signing authentication header...");
     const vapidHeader = await this.generateVapidHeader(subscription.endpoint, vapidKeys, subject);
@@ -49,10 +58,10 @@ export class SendCommand {
     this.logger.info("Message sent", response.status);
   }
 
-  async readSubscription(): Promise<{endpoint: string, p256dh: string, auth: string}> {
-    const channelIDs = JSON.parse(await this.storage.read('channelIDs'));
+  async readSubscription(): Promise<{ endpoint: string; p256dh: string; auth: string }> {
+    const channelIDs = JSON.parse(await this.storage.read("channelIDs"));
     if (channelIDs.length === 0) {
-      throw new Error('No subscriptions found');
+      throw new Error("No subscriptions found");
     }
 
     const channelID = channelIDs[0];
@@ -62,18 +71,22 @@ export class SendCommand {
 
     const ecKeys = await parsePrivateJwk(jwk);
     if (!ecKeys || !ecKeys.uncompressedPublicKey) {
-      throw new Error('No valid keys found');
+      throw new Error("No valid keys found");
     }
 
     return { endpoint, p256dh: fromBufferToUrlB64(ecKeys.uncompressedPublicKey), auth };
   }
 
-  private async generateVapidHeader(audience: string, vapidKey: {public: string, private: string}, subject: string): Promise<string> {
-    const expiration =  Math.floor(Date.now() / 1000) + 60; // 1 min
+  private async generateVapidHeader(
+    audience: string,
+    vapidKey: { public: string; private: string },
+    subject: string,
+  ): Promise<string> {
+    const expiration = Math.floor(Date.now() / 1000) + 60; // 1 min
 
     const vapidPublicBuffer = fromUrlB64ToBuffer(vapidKey.public);
     if (vapidPublicBuffer.length !== 65) {
-      throw new Error('Invalid VAPID public key');
+      throw new Error("Invalid VAPID public key");
     }
     // Building a JWK from the public and private parts of the vapid key so that we can import it using subtle crypto
     const vapidJwk = {
@@ -86,9 +99,13 @@ export class SendCommand {
       d: vapidKey.private,
     };
 
-    const ecdhSecretKey = await crypto.subtle.importKey("jwk", vapidJwk, { name: "ECDSA", namedCurve: "P-256" }, false, [
-      "sign",
-    ]);
+    const ecdhSecretKey = await crypto.subtle.importKey(
+      "jwk",
+      vapidJwk,
+      { name: "ECDSA", namedCurve: "P-256" },
+      false,
+      ["sign"],
+    );
 
     const audUrl = new URL(audience);
 
@@ -100,11 +117,19 @@ export class SendCommand {
       aud: `${audUrl.protocol}//${audUrl.host}`,
       exp: expiration,
       sub: subject,
-    }
+    };
 
-    const unsignedToken = Buffer.from(fromBufferToUrlB64(fromUtf8ToBuffer(JSON.stringify(tokenHeader))) + '.' + fromBufferToUrlB64(fromUtf8ToBuffer(JSON.stringify(tokenBody))));
+    const unsignedToken = Buffer.from(
+      fromBufferToUrlB64(fromUtf8ToBuffer(JSON.stringify(tokenHeader))) +
+        "." +
+        fromBufferToUrlB64(fromUtf8ToBuffer(JSON.stringify(tokenBody))),
+    );
 
-    const signature = await crypto.subtle.sign({ name: "ECDSA", hash: { name: "SHA-256" } }, ecdhSecretKey, unsignedToken);
+    const signature = await crypto.subtle.sign(
+      { name: "ECDSA", hash: { name: "SHA-256" } },
+      ecdhSecretKey,
+      unsignedToken,
+    );
 
     return `vapid t=${unsignedToken}.${fromBufferToUrlB64(signature)}, k=${vapidKey.public}`;
   }

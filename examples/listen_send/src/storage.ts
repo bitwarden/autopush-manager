@@ -2,7 +2,7 @@ import fs from "fs";
 
 import { StorageInterface } from "autopush-manager/src";
 
-export class Storage implements StorageInterface{
+export class Storage implements StorageInterface {
   private store;
   constructor() {
     if (!fs.existsSync("storage.json")) {

@@ -1,4 +1,4 @@
-import { createPushManager, Logger } from 'autopush-manager/src/index'
+import { createPushManager, Logger } from "autopush-manager/src/index";
 
 import { Storage } from "./storage";
 
@@ -6,15 +6,15 @@ export class ListenCommand {
   constructor(
     private readonly logger: Logger,
     private readonly storage: Storage,
-  ){}
+  ) {}
 
   async listen(applicationServerKey: string): Promise<void> {
-    this.logger.info('Starting to listen...')
+    this.logger.info("Starting to listen...");
 
-    const pushManager = await createPushManager(this.storage, this.logger)
+    const pushManager = await createPushManager(this.storage, this.logger);
     const subscription = await pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey
+      applicationServerKey,
     });
 
     this.logger.info("Subscription created", JSON.parse(JSON.stringify(subscription)));
@@ -23,6 +23,6 @@ export class ListenCommand {
     });
     subscription.addEventListener("pushsubscriptionchange", (event) => {
       this.logger.info("Subscription changed. I should tell the server!!", event);
-    })
+    });
   }
 }

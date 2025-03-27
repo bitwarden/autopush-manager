@@ -1,3 +1,5 @@
+import * as crypto from "crypto";
+
 import { any, anyString } from "jest-mock-extended";
 
 import { applicationPublicKey } from "../spec/constants";
@@ -103,8 +105,7 @@ describe("PushSubscription", () => {
     });
 
     it("store has all the values", async () => {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const subtle = require("crypto").webcrypto.subtle;
+      const subtle = crypto.webcrypto.subtle;
       const prvJwk = await subtle.exportKey("jwk", pushSubscription["keys"].ecKeys.privateKey);
 
       const expected = new Map([

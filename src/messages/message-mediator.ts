@@ -21,7 +21,6 @@ import { PingSender } from "./senders/ping-sender";
 import { RegisterSender } from "./senders/register-sender";
 import { UnregisterSender } from "./senders/unregister-sender";
 
-
 export class MessageMediator {
   private handlers: MessageHandler<AutoConnectServerMessage>[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TODO: get rid of this any

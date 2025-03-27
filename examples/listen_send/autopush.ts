@@ -27,7 +27,9 @@ program
   });
 program
   .command("send")
-  .description("Send messages to a listening autopush client. Note: messages longer than 1007 bytes will fail.")
+  .description(
+    "Send messages to a listening autopush client. Note: messages longer than 1007 bytes will fail.",
+  )
   .option(
     "--serverPublicKey <serverPublicKey>",
     "The Server's VAPID public key",
@@ -47,11 +49,7 @@ program
     "Contact information for the creator of this content. Despite RFC8292, this must be a mailto: link",
     "mailto:mailto:webpush_ops@bitwarden.com",
   )
-  .option(
-    "--ttl <ttl>",
-    "The time to live for the message in seconds",
-    "60",
-  )
+  .option("--ttl <ttl>", "The time to live for the message in seconds", "60")
   .argument("<message>", "The message to send")
   .action(
     async (
@@ -72,7 +70,7 @@ program
         subscription,
         { public: serverPublicKey, private: serverPrivateKey },
         subject,
-        ttlNumber
+        ttlNumber,
       );
     },
   );

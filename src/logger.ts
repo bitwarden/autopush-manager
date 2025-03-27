@@ -1,6 +1,6 @@
 import { joinNamespaces, type JoinStrings } from "./string-manipulation";
 
-export interface Logger extends Pick<Console, "debug" | "info" | "warn" | "error"> {}
+export type Logger = Pick<Console, "debug" | "info" | "warn" | "error">;
 
 export class TimedLogger implements Logger {
   constructor(private readonly logger: Logger) {}

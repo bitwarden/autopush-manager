@@ -19,26 +19,13 @@
     "listEmittedFiles": false,
     "listFiles": false,
     "pretty": true,
-    "lib": [
-      "es2017",
-      "dom"
-    ],
-    "types": [
-      "node"
-    ],
-    "typeRoots": [
-      "node_modules/@types",
-      "src/types"
-    ]
+    "lib": ["es2017", "dom"],
+    "types": ["node"],
+    "typeRoots": ["node_modules/@types", "src/types"]
   },
-  "include": [
-    "src",
-    "autopush.ts"
-  ],
+  "include": ["src", "autopush.ts"],
   "compileOnSave": false,
   "paths": {
-    "@apm": [
-      "../../src"
-    ]
+    "@apm": ["../../src"]
   }
 }
