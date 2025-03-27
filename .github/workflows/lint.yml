@@ -3,31 +3,16 @@ name: Lint
 on:
   pull_request:
     types: [opened, synchronize]
-    paths-ignore:
-      - '.github/workflows/**'
-  push:
-    branches:
-      - 'main'
-      - 'rc'
-      - 'hotfix-rc-*'
-    paths-ignore:
-      - '.github/workflows/**'
-  workflow_dispatch:
-    inputs: {}
-
-defaults:
-  run:
-    shell: bash
 
 jobs:
   lint:
     name: Lint
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout repo
+      - name: Check out repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Get Node Version
+      - name: Get Node version
         id: retrieve-node-version
         run: |
           NODE_NVMRC=$(cat .nvmrc)
@@ -46,13 +31,13 @@ jobs:
           node --version
           npm --version
 
-      - name: Install package node dependencies
+      - name: Install package Node dependencies
         run: npm ci
 
       - name: Build package
         run: npm run build
 
-      - name: Install examples node dependencies
+      - name: Install examples Bode dependencies
         run: |
           cd examples
           find . -name package.json -not -path "**/node_modules/**" -not -path "**/build/**" -execdir npm ci \;

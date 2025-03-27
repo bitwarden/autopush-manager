@@ -3,17 +3,12 @@ name: Test
 on:
   pull_request:
     types: [opened, synchronize]
-    paths-ignore:
-      - '.github/workflows/**'
   push:
     branches:
       - 'main'
       - 'rc'
       - 'hotfix-rc-*'
-    paths-ignore:
-      - '.github/workflows/**'
   workflow_dispatch:
-    inputs: {}
 
 jobs:
   testing:
@@ -28,7 +23,7 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Get Node Version
+      - name: Get Node version
         id: retrieve-node-version
         run: |
           NODE_NVMRC=$(cat .nvmrc)
@@ -67,3 +62,5 @@ jobs:
 
       - name: Upload results to codecov.io
         uses: codecov/test-results-action@4e79e65778be1cecd5df25e14af1eafb6df80ea9 # v1.0.2
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
