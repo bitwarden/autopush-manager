@@ -34,7 +34,12 @@ const logger = console;
 const storage = new Storage();
 
 require("../../build/src/index")
-    .createPushManager(storage, logger)
+    .createPushManager(storage, logger, {
+        // Use the staging environment for demos.
+        // Dev environments always return 404 when sending notifications
+        // Can use your own autopush infrastructure
+        autopushUrl: "wss://autoconnect.stage.mozaws.net/",
+    })
     .then(async (pushManager) => {
         const subscription = await pushManager.subscribe({
             userVisibleOnly: true,

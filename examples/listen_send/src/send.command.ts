@@ -29,7 +29,7 @@ export class SendCommand {
       message,
       subscription.p256dh,
       subscription.auth,
-    );    
+    );
 
     this.logger.info("Signing authentication header...");
     const vapidHeader = await this.generateVapidHeader(subscription.endpoint, vapidKeys, subject);
@@ -44,9 +44,9 @@ export class SendCommand {
       },
       body: encryptedMessage,
     };
-    this.logger.info("Sending message...", post);
+    this.logger.info("Sending message...", subscription.endpoint, post);
     const response = await fetch(subscription.endpoint, post);
-    this.logger.info("Message sent", response.status);
+    this.logger.info("Message sent", response);
   }
 
   async readSubscription(): Promise<{endpoint: string, p256dh: string, auth: string}> {

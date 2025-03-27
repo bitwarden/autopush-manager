@@ -11,7 +11,12 @@ export class ListenCommand {
   async listen(applicationServerKey: string): Promise<void> {
     this.logger.info('Starting to listen...')
 
-    const pushManager = await createPushManager(this.storage, this.logger)
+    const pushManager = await createPushManager(this.storage, this.logger, {
+      // Use the staging environment for demos.
+      // Dev environments always return 404 when sending notifications
+      // Can use your own autopush infrastructure
+      autopushUrl: "wss://autoconnect.stage.mozaws.net/",
+    });
     const subscription = await pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey
