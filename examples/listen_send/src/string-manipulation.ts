@@ -34,7 +34,7 @@ export function newUuid<T extends string>(): T {
 }
 
 export function fromBufferToB64(buffer: ArrayBuffer): string {
-    return Buffer.from(buffer).toString("base64");
+  return Buffer.from(buffer).toString("base64");
 }
 
 export function fromBufferToUrlB64<T extends string = string>(buffer: ArrayBuffer): T {
@@ -54,13 +54,13 @@ export function fromUrlB64ToBuffer(urlB64: string): Uint8Array {
 }
 
 export function fromB64ToBuffer(b64: string): Uint8Array {
-    return Buffer.from(b64, "base64");
+  return Buffer.from(b64, "base64");
 }
 
 export function fromUtf8ToBuffer(str: string): Uint8Array {
-    return new Uint8Array(Buffer.from(str, "utf8"));
+  return new Uint8Array(Buffer.from(str, "utf8"));
 }
 
 export function fromBufferToUtf8(buffer: ArrayBuffer): string {
-    return Buffer.from(buffer).toString("utf8");
+  return Buffer.from(buffer).toString("utf8");
 }

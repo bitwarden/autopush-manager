@@ -7,7 +7,7 @@
     "build:watch": "tsc -p tsconfig.json --watch",
     "lint": "eslint . --cache --cache-strategy content && prettier --check .",
     "lint:fix:eslint": "eslint . --cache --cache-strategy content --fix",
-    "lint:fix:prettier": "prettier --cache --write .",
+    "prettier": "prettier --cache --write .",
     "lint:fix": "run-s lint:fix:*",
     "lint:clear": "rimraf .eslintcache",
     "test": "jest",
