@@ -46,8 +46,16 @@ jobs:
           node --version
           npm --version
 
-      - name: Install Node dependencies
+      - name: Install package node dependencies
         run: npm ci
+
+      - name: Build package
+        run: npm run build
+
+      - name: Install examples node dependencies
+        run: |
+          cd examples
+          find . -name package.json -not -path "**/node_modules/**" -not -path "**/build/**" -execdir npm ci \;
 
       - name: Run linter
         run: npm run lint
