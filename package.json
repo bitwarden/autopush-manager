@@ -33,7 +33,7 @@
     "@types/eslint__js": "8.42.3",
     "@types/jest": "29.5.12",
     "@types/ws": "8.5.12",
-    "eslint": "8.57.0",
+    "eslint": "9.23.0",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-import": "2.29.1",
     "husky": "9.1.4",
