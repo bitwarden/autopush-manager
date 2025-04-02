@@ -20,8 +20,8 @@
     "listFiles": false,
     "pretty": true,
     "lib": ["es2017", "dom"],
-    "types": ["node"],
+    "types": ["node"]
   },
   "include": ["src", "listen_send.ts"],
-  "compileOnSave": false,
+  "compileOnSave": false
 }

@@ -1,7 +1,10 @@
 import { createPushManager, Logger, StorageInterface } from "autopush-manager";
 
 export class Listener {
-  constructor(readonly storage: StorageInterface, readonly logger: Logger) {}
+  constructor(
+    readonly storage: StorageInterface,
+    readonly logger: Logger,
+  ) {}
 
   async listen(applicationServerKey: string): Promise<void> {
     this.logger.info("Starting to listen...");

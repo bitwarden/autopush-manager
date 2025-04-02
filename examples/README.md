@@ -48,7 +48,7 @@ From the `listen_send/build` directory, run:
 node listen_send.cjs listen
 ```
 
-to start listening for notifications. This will create or update a new `storage.json` file in the current directory. 
+to start listening for notifications. This will create or update a new `storage.json` file in the current directory.
 This file contains the negotiated subscription details. It can be used to reinitialize this same connection on subsequent
 executions, or transformed slightly to send to a server to allow that server to deliver notifications to it.
 If you want to create a totally new subscription, delete the `storage.json` file and run the command again.
@@ -70,11 +70,11 @@ a different subscription with the `--subscription` flag. The subscription must b
 
 ```json
 {
-  "endpoint": "https://example.com/endpoint",
-  "keys": {
-    "p256dh": "base64url-encoded-raw-public-key",
-    "auth": "base64url-encoded-auth-secret"
-  }
+    "endpoint": "https://example.com/endpoint",
+    "keys": {
+        "p256dh": "base64url-encoded-raw-public-key",
+        "auth": "base64url-encoded-auth-secret"
+    }
 }
 ```
 
