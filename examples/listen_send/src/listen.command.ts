@@ -1,4 +1,4 @@
-import { createPushManager, Logger } from "autopush-manager/src/index";
+import { createPushManager, Logger } from "autopush-manager";
 
 import { Storage } from "./storage";
 

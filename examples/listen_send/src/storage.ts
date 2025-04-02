@@ -1,6 +1,6 @@
 import fs from "fs";
 
-import { StorageInterface } from "autopush-manager/src";
+import { StorageInterface } from "autopush-manager";
 
 export class Storage implements StorageInterface {
   private store;
