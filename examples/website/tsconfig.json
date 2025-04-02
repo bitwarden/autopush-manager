@@ -19,8 +19,8 @@
     "listEmittedFiles": false,
     "listFiles": false,
     "pretty": true,
-    "lib": ["es2017", "dom"],
+    "lib": ["es2017", "dom"]
   },
   "include": ["src"],
-  "compileOnSave": false,
+  "compileOnSave": false
 }

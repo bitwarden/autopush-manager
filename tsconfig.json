@@ -23,7 +23,7 @@
     "pretty": true,
 
     "lib": ["es2017", "dom"],
-    "types": ["node", "jest"],
+    "types": ["node", "jest"]
   },
   "include": ["index.ts", "src", "spec"],
   "files": ["./test.setup.ts"],

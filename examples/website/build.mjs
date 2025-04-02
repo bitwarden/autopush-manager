@@ -22,14 +22,14 @@ let ctx = await context({
 });
 
 if (process.env.NODE_ENV !== "dev") {
-  // minify in production
-  await ctx.rebuild({
-    minify: true,
-  });
+    // minify in production
+    await ctx.rebuild({
+        minify: true,
+    });
 } else {
-  await ctx.watch();
-  
-  await ctx.serve({
-      servedir: "build",
-  });
+    await ctx.watch();
+
+    await ctx.serve({
+        servedir: "build",
+    });
 }

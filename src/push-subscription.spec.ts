@@ -1,6 +1,5 @@
 import * as crypto from "crypto";
 
-
 import { any, anyString } from "jest-mock-extended";
 
 import { applicationPublicKey } from "../spec/constants";
