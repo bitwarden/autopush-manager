@@ -8,7 +8,25 @@
   },
   "overrides": [
     {
-      "files": ["*.ts", "*.js", "*.mjs", "*.cjs"],
+      "files": ["*.mjs"],
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "sourceType": "module",
+        "ecmaVersion": 2020
+      },
+      "extends": ["eslint:recommended"]
+    },
+    {
+      "files": [".cjs"],
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "sourceType": "script",
+        "ecmaVersion": 2020
+      },
+      "extends": ["eslint:recommended"]
+    },
+    {
+      "files": ["*.ts", "*.js"],
       "excludedFiles": ["test*.setup.ts", "test.environment.ts"],
       "plugins": ["@typescript-eslint", "import"],
       "parser": "@typescript-eslint/parser",
