@@ -8,7 +8,12 @@
   },
   "overrides": [
     {
-      "files": ["*.ts", "*.js"],
+      "files": [
+        "*.ts",
+        "*.js",
+        "*.mjs",
+        "*.cjs"
+      ],
       "excludedFiles": ["test*.setup.ts", "test.environment.ts"],
       "plugins": ["@typescript-eslint", "import"],
       "parser": "@typescript-eslint/parser",
