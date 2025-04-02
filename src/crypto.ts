@@ -1,23 +1,40 @@
-import * as crypto from "crypto";
-
 import type { Jsonify } from "type-fest";
 
 import { CsprngArray, ECKeyPair, UncompressedPublicKey } from "./crypto-types";
 
-const subtle = crypto.webcrypto.subtle;
+type NodeCrypto = typeof import("crypto");
+
+const subtle = crypto.subtle;
+
+function isNodeCrypto(crypto: NodeCrypto | typeof globalThis.crypto): crypto is NodeCrypto {
+  // Node.js Crypto has a `randomBytes` method
+  return !!(crypto as NodeCrypto).randomBytes;
+}
 
 /**
  * Return a buffer filled with random bytes generated from a cryptographically secure random number generator
  */
 export function randomBytes(size: number): Promise<CsprngArray> {
   return new Promise<CsprngArray>((resolve, reject) => {
-    crypto.randomBytes(size, (error, bytes) => {
-      if (error != null) {
-        reject(error);
-      } else {
-        resolve(new Uint8Array(bytes) as CsprngArray);
+    if (isNodeCrypto(crypto)) {
+      // Node.js environment
+      crypto.randomBytes(size, (error, bytes) => {
+        if (error != null) {
+          reject(error);
+        } else {
+          resolve(new Uint8Array(bytes) as CsprngArray);
+        }
+      });
+      return;
+    } else {
+      // Browser environment, use the Web Crypto API
+      if (!crypto || !crypto.getRandomValues) {
+        return reject(new Error("No secure random number generator available"));
       }
-    });
+      const arr = new Uint8Array(size);
+      crypto.getRandomValues(arr);
+      return resolve(arr as CsprngArray);
+    }
   });
 }
 
@@ -32,13 +49,19 @@ export async function aesGcmDecrypt(
   key: ArrayBuffer,
   iv: ArrayBuffer,
 ): Promise<ArrayBuffer> {
-  const dataBuffer = Buffer.from(data.slice(0, data.byteLength - 16));
-  const authTag = Buffer.from(data.slice(data.byteLength - 16));
-  const cryptoKey = crypto.createSecretKey(Buffer.from(key));
-  const cipher = crypto.createDecipheriv("aes-128-gcm", cryptoKey, Buffer.from(iv));
-  cipher.setAuthTag(authTag);
-  const decrypted = cipher.update(dataBuffer);
-  cipher.final();
+  if (!subtle) {
+    throw new Error("Web Crypto API not available");
+  }
+  const cryptoKey = await subtle.importKey("raw", key, { name: "AES-GCM" }, false, ["decrypt"]);
+  const decrypted = (await subtle.decrypt(
+    {
+      name: "AES-GCM",
+      iv: new Uint8Array(iv),
+      tagLength: 128,
+    },
+    cryptoKey,
+    data,
+  )) as ArrayBuffer;
   return decrypted;
 }
 
