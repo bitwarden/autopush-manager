@@ -1,7 +1,7 @@
 {
   "name": "listen-send",
   "version": "0.1.0",
-  "description": "An example usage of autopush-manager that has a listen mode and a send mode.",
+  "description": "An example usage of Autopush-Manager that has a listen mode and a send mode.",
   "scripts": {
     "clean": "rimraf build",
     "build": "npm run clean && tsc -p tsconfig.json"
