@@ -1,5 +1,3 @@
-import * as crypto from "crypto";
-
 import type { Tagged } from "type-fest";
 
 import { isNode, _global } from "./util";

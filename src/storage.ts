@@ -1,4 +1,4 @@
-import type { Constructor, Jsonify, JsonObject, JsonValue } from "type-fest";
+import type { JsonObject, JsonValue } from "type-fest";
 
 import { joinNamespaces, JoinStrings } from "./string-manipulation";
 
@@ -7,15 +7,6 @@ export type PublicStorage = {
   write: WriteCallback;
   remove: RemoveCallback;
 };
-
-export function deserializerFor<T extends JsonObject>(
-  constructor: Constructor<T>,
-): (json: Jsonify<T>) => T {
-  return (json: Jsonify<T>) => {
-    const obj = Object.setPrototypeOf(json, constructor.prototype);
-    return obj;
-  };
-}
 
 export class Storage<const TNamespace extends string = ""> {
   constructor(

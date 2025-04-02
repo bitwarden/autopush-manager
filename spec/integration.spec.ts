@@ -1,6 +1,6 @@
 import * as crypto from "crypto";
 
-import { createPushManager } from "../src";
+import { createPushManager } from "..";
 import { deriveKeyAndNonce, generateEcKeys, randomBytes } from "../src/crypto";
 import { ClientAck, ClientAckCodes } from "../src/messages/message";
 import { PushManager } from "../src/push-manager";
