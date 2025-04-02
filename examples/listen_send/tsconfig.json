@@ -21,11 +21,7 @@
     "pretty": true,
     "lib": ["es2017", "dom"],
     "types": ["node"],
-    "typeRoots": ["node_modules/@types", "src/types"]
   },
-  "include": ["src", "autopush.ts"],
+  "include": ["src", "listen_send.ts"],
   "compileOnSave": false,
-  "paths": {
-    "@apm": ["../../src"]
-  }
 }

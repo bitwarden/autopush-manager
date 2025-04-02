@@ -1,5 +1,7 @@
 import * as crypto from "crypto";
 
+import { Logger } from "autopush-manager";
+// This digs into autopush-manager to get crypto functions and types needed to encrypt. This should be handled by a separate server in a normal application.
 import {
   randomBytes,
   generateEcKeys,
@@ -7,7 +9,7 @@ import {
   parsePrivateJwk,
 } from "autopush-manager/src/crypto";
 import { UncompressedPublicKey } from "autopush-manager/src/crypto-types";
-import { Logger } from "autopush-manager/src/index";
+// End digging into autopush-manager
 
 import { Storage } from "./storage";
 import { fromBufferToUrlB64, fromUrlB64ToBuffer, fromUtf8ToBuffer } from "./string-manipulation";
@@ -28,7 +30,7 @@ export class SendCommand {
 
   async send(
     message: string,
-    subscription: { endpoint: string; p256dh: string; auth: string },
+    subscription: { endpoint: string; keys: { p256dh: string; auth: string } },
     vapidKeys: { public: string; private: string },
     subject: string,
     ttl: number,
@@ -36,8 +38,8 @@ export class SendCommand {
     this.logger.info("Encrypting payload...");
     const encryptedMessage = await aes128GcmEncrypt(
       message,
-      subscription.p256dh,
-      subscription.auth,
+      subscription.keys.p256dh,
+      subscription.keys.auth,
     );
 
     this.logger.info("Signing authentication header...");
@@ -58,10 +60,12 @@ export class SendCommand {
     this.logger.info("Message sent", response.status);
   }
 
-  async readSubscription(): Promise<{ endpoint: string; p256dh: string; auth: string }> {
-    const channelIDs = JSON.parse(await this.storage.read("channelIDs"));
+  async readSubscription(): Promise<{ endpoint: string; keys: { p256dh: string; auth: string } }> {
+    const channelIDs = JSON.parse((await this.storage.read("channelIDs")) ?? "[]");
     if (channelIDs.length === 0) {
-      throw new Error("No subscriptions found");
+      throw new Error(
+        "No subscriptions found. Either start listening with the listen command first, or use the --subscribe flag.",
+      );
     }
 
     const channelID = channelIDs[0];
@@ -74,7 +78,7 @@ export class SendCommand {
       throw new Error("No valid keys found");
     }
 
-    return { endpoint, p256dh: fromBufferToUrlB64(ecKeys.uncompressedPublicKey), auth };
+    return { endpoint, keys: { p256dh: fromBufferToUrlB64(ecKeys.uncompressedPublicKey), auth } };
   }
 
   private async generateVapidHeader(
