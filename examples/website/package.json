@@ -1,0 +1,32 @@
+{
+  "name": "listen-send",
+  "version": "0.1.0",
+  "description": "An example usage of autopush-manager that has a listen mode and a send mode.",
+  "scripts": {
+    "clean": "rimraf build",
+    "build": "npm run clean && node ./build.mjs",
+    "build:serve": "cross-env NODE_ENV=dev npm run build"
+  },
+  "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bitwarden/autopush-manager.git"
+  },
+  "author": "Bitwarden Inc. <hello@bitwarden.com> (https://bitwarden.com)",
+  "license": "GPL-3.0-or-later",
+  "engines": {
+    "node": "~20",
+    "npm": "~10"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "esbuild": "^0.25.2",
+    "esbuild-plugin-copy": "^2.1.1",
+    "rimraf": "^6.0.1",
+    "typescript": "5.5.4",
+    "typescript-eslint": "8.21.0"
+  },
+  "dependencies": {
+    "autopush-manager": "file:../../build"
+  }
+}
