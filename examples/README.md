@@ -4,9 +4,9 @@ This directory contains examples of how to use the Autopush-Manager module.
 
 These examples all reference a local build of `autopush-manager`, so you have to build it, first.
 
-## Simple Listener
+## Simple listener
 
-A node script which establishes a connection to the Mozilla Autopush servers and listen for notifications.
+[simple_listener](./simple_listener) is a node script which establishes a connection to the Mozilla Autopush servers and listen for notifications.
 Log messages, subscription details, and notifications are printed to the console.
 
 ### Run
@@ -19,9 +19,9 @@ node listen.cjs
 
 Notifications can be sent to the subscription through normal means. https://web-push-codelab.glitch.me/ is a good resource for debugging. Simply update the `applicationServerKey` in the example to the one provided by the push companion.
 
-## Listen Send
+## Listen send
 
-A node command line application that can both connect to autopush to listen for notifications and send notifications to a given subscription.
+[listen_send](./listen_send/) is a node command line application that can both connect to autopush to listen for notifications and send notifications to a given subscription.
 
 Use the `--help` flag to see the available options and to inspect options on subcommands.
 
@@ -40,7 +40,7 @@ npm ci
 npm run build
 ```
 
-### Listening for Notifications
+### Listening for notifications
 
 From the `listen_send/build` directory, run:
 
@@ -53,7 +53,7 @@ This file contains the negotiated subscription details. It can be used to reinit
 executions, or transformed slightly to send to a server to allow that server to deliver notifications to it.
 If you want to create a totally new subscription, delete the `storage.json` file and run the command again.
 
-### Sending Notifications
+### Sending notifications
 
 In a typical use case, you would have a server that is responsible for sending notifications to the subscription.
 However, for testing and illustration purposes, this example allows you to send notifications from the command line to
@@ -83,8 +83,8 @@ necessary keys. Use the `--help` flag to see the available options.
 
 ## Website
 
-A website showcasing the usage of Autopush-Manager in browser contexts. There is no real difference here from the
-[Simple Listener](#simple-listener) example, but for execution in a browser.
+[website](./website/) is a demonstration of the usage of Autopush-Manager in browser contexts. There is no real difference here from the
+[Simple listener](#simple-listener) example, but for execution in a browser.
 
 Open dev tools to see Autopush-Manager log output and use `listen_send` to send notifications to the browser page.
 
