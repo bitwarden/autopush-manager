@@ -6,7 +6,26 @@ import {
   fromBufferToB64,
   fromBufferToUtf8,
   fromUtf8ToBuffer,
+  joinNamespaces,
 } from "./string-manipulation";
+
+describe("joinNamespaces", () => {
+  it("joins namespaces", () => {
+    expect(joinNamespaces("a", "b")).toBe("a:b");
+  });
+
+  it("joins namespaces with a defined separator", () => {
+    expect(joinNamespaces("a", "b", "-")).toBe("a-b");
+  });
+
+  it("handles empty first namespace", () => {
+    expect(joinNamespaces("", "b")).toBe("b");
+  });
+
+  it("handles empty last namespace", () => {
+    expect(joinNamespaces("a", "")).toBe("a");
+  });
+});
 
 describe("newUuid", () => {
   it("returns a new uuid", () => {
@@ -36,12 +55,13 @@ describe("fromB64toUrlB64", () => {
 
 describe("fromUrlB64ToB64", () => {
   it("adds padding", () => {
+    expect(fromUrlB64ToB64("YWFh")).toBe("YWFh");
     expect(fromUrlB64ToB64("aGVsbG8gd29ybGQ")).toBe("aGVsbG8gd29ybGQ=");
     expect(fromUrlB64ToB64("aGVsbG8gd29ybG")).toBe("aGVsbG8gd29ybG==");
   });
 
   it("throws on illegal base64url string", () => {
-    expect(() => fromUrlB64ToB64("aGVsbG8gd29yb")).toThrowError("Illegal base64url string");
+    expect(() => fromUrlB64ToB64("aGVsbG8gd29yb")).toThrow("Illegal base64url string");
   });
 
   it("replaces - with +", () => {

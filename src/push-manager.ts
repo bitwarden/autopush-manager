@@ -1,4 +1,4 @@
-import { WebSocket } from "ws";
+import { WebSocket as wsWebsocket } from "ws";
 
 import { Logger, NamespacedLogger, TimedLogger } from "./logger";
 import { RegisterHandler } from "./messages/handlers/register-handler";
@@ -21,6 +21,8 @@ export interface PublicPushManager {
   subscribe(options: PushSubscriptionOptions): Promise<PublicPushSubscription>;
   destroy(): Promise<void>;
 }
+
+const WebSocket = globalThis.WebSocket || wsWebsocket;
 
 type PushManagerOptions = {
   /** The Url to connect to. Defaults to `wss://push.services.mozilla.com` */
@@ -182,15 +184,13 @@ export class PushManager implements PublicPushManager {
       }
       await this.mediator.handle(messageData);
     };
-    this._websocket.once("open", async () => {
+    this._websocket.onopen = async () => {
+      this.wsOpenTime = new Date().getTime();
+      this.logger.debug("WebSocket connection opened");
       await this.mediator.send(HelloSender, {
         uaid: this._uaid,
         channelIDs: this.subscriptionHandler.channelIDs,
       });
-    });
-    this._websocket.onopen = async () => {
-      this.wsOpenTime = new Date().getTime();
-      this.logger.debug("WebSocket connection opened");
     };
     this._websocket.onclose = async (e) => {
       this.logger.debug("WebSocket connection closed", e.reason, e.code);

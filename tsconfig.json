@@ -4,12 +4,11 @@
     "target": "ESNext",
     "outDir": "build/",
     "rootDir": "./",
-    "moduleResolution": "node",
-    "module": "CommonJS",
+    "moduleResolution": "node16",
+    "module": "Node16",
     "declaration": true,
     "inlineSourceMap": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true,
 
     "strict": true,
 
@@ -24,10 +23,9 @@
     "pretty": true,
 
     "lib": ["es2017", "dom"],
-    "types": ["node", "jest"],
-    "typeRoots": ["node_modules/@types", "src/types"]
+    "types": ["node", "jest"]
   },
-  "include": ["src", "spec"],
+  "include": ["index.ts", "src", "spec"],
   "files": ["./test.setup.ts"],
   "compileOnSave": false
 }

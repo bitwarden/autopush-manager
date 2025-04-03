@@ -1,11 +1,9 @@
-import { createPushManager, Logger } from "autopush-manager";
+import { createPushManager, Logger, StorageInterface } from "autopush-manager";
 
-import { Storage } from "./storage";
-
-export class ListenCommand {
+export class Listener {
   constructor(
-    private readonly logger: Logger,
-    private readonly storage: Storage,
+    readonly storage: StorageInterface,
+    readonly logger: Logger,
   ) {}
 
   async listen(applicationServerKey: string): Promise<void> {

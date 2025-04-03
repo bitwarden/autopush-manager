@@ -4,8 +4,8 @@
     "target": "ESNext",
     "outDir": "build/",
     "rootDir": "./",
-    "moduleResolution": "node16",
-    "module": "Node16",
+    "moduleResolution": "bundler",
+    "module": "ESNext",
     "declaration": true,
     "inlineSourceMap": true,
     "esModuleInterop": true,
@@ -19,9 +19,8 @@
     "listEmittedFiles": false,
     "listFiles": false,
     "pretty": true,
-    "lib": ["es2017", "dom"],
-    "types": ["node"]
+    "lib": ["es2017", "dom"]
   },
-  "include": ["src", "listen_send.ts"],
+  "include": ["src"],
   "compileOnSave": false
 }
