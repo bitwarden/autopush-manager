@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "description": "A module to subscribe to Mozilla Autopush and receive notifications",
   "scripts": {
-    "build": "tsc -p tsconfig.package.json",
-    "build:watch": "tsc -p tsconfig.json --watch",
+    "clean": "rimraf build",
+    "build": "npm run clean && tsc -p tsconfig.package.json",
+    "build:watch": "npm run clean && tsc -p tsconfig.json --watch",
     "lint": "eslint . --cache --cache-strategy content && prettier --check .",
     "lint:fix:eslint": "eslint . --cache --cache-strategy content --fix",
     "prettier": "prettier --cache --write .",

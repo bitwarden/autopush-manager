@@ -6,9 +6,24 @@ import { applicationPublicKey } from "../spec/constants";
 import { TestLogger } from "../spec/test-logger";
 import { TestStorage } from "../spec/test-storage";
 
-import { extractPrivateJwk } from "./crypto";
+import { extractPrivateJwk, webPushDecryptPrep, aesGcmDecrypt, removePadding } from "./crypto";
+import { ClientAckCodes, ServerNotification } from "./messages/message";
 import { GenericPushSubscription, PushSubscription } from "./push-subscription";
 import { fromBufferToUrlB64, joinNamespaces, newUuid } from "./string-manipulation";
+
+jest.mock("./crypto", () => {
+  const originalCrypto = jest.requireActual("./crypto");
+  return {
+    ...originalCrypto,
+    webPushDecryptPrep: jest.fn(),
+    aesGcmDecrypt: jest.fn(),
+    removePadding: jest.fn(),
+  };
+});
+
+const webPushDecryptPrepMock = webPushDecryptPrep as jest.Mock;
+const aesGcmDecryptMock = aesGcmDecrypt as jest.Mock;
+const removePaddingMock = removePadding as jest.Mock;
 
 const data = {
   channelID: newUuid(),
@@ -246,6 +261,78 @@ describe("PushSubscription", () => {
       pushSubscription["eventManager"].dispatchEvent("notification", "data");
 
       expect(listener).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("handleNotification", () => {
+    let notification: ServerNotification;
+
+    beforeEach(() => {
+      notification = {
+        data: "data",
+        messageType: "notification",
+        channelID: pushSubscription.channelID,
+        version: "test_version",
+        headers: {
+          "Content-Encoding": "aes128gcm",
+        },
+        ttl: 60,
+      };
+
+      webPushDecryptPrepMock.mockImplementation(jest.requireActual("./crypto").webPushDecryptPrep);
+      aesGcmDecryptMock.mockImplementation(jest.requireActual("./crypto").aesGcmDecrypt);
+      removePaddingMock.mockImplementation(jest.requireActual("./crypto").removePadding);
+    });
+
+    it("handles empty data notifications", async () => {
+      const listener = jest.fn();
+      pushSubscription.addEventListener("notification", listener);
+
+      notification = { ...notification, data: null };
+
+      await pushSubscription.handleNotification(notification);
+      expect(listener).toHaveBeenCalledWith(null);
+    });
+
+    it("throws on incorrect content encoding", async () => {
+      notification = {
+        ...notification,
+        headers: { ...notification.headers, "Content-Encoding": "unsupported_encoding" },
+      };
+
+      await expect(() => pushSubscription.handleNotification(notification)).rejects;
+
+      try {
+        await pushSubscription.handleNotification(notification);
+      } catch (e) {
+        expect(e).toEqual(ClientAckCodes.DECRYPT_FAIL);
+      }
+    });
+
+    it("throws on badly encrypted data", async () => {
+      await expect(() => pushSubscription.handleNotification(notification)).rejects;
+
+      try {
+        await pushSubscription.handleNotification(notification);
+      } catch (e) {
+        expect(e).toEqual(ClientAckCodes.DECRYPT_FAIL);
+      }
+    });
+
+    it("handles aes128gcm encrypted data", async () => {
+      webPushDecryptPrepMock.mockResolvedValue({
+        contentEncryptionKey: Buffer.from("key"),
+        nonce: Buffer.from("nonce"),
+        encryptedContent: Buffer.from("encrypted"),
+      });
+      aesGcmDecryptMock.mockResolvedValue(Buffer.from("decrypted"));
+      removePaddingMock.mockReturnValue("decrypted");
+      const listener = jest.fn();
+      pushSubscription.addEventListener("notification", listener);
+
+      await pushSubscription.handleNotification(notification);
+
+      expect(listener).toHaveBeenCalledWith("decrypted");
     });
   });
 });
