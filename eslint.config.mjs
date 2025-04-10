@@ -14,6 +14,7 @@ export default defineConfig([
         "**/node_modules/",
         "**/jest.*.config.js",
         "**/jest.config.js",
+        "examples/",
     ]),
     {
         languageOptions: {
