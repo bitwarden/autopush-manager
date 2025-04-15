@@ -24,7 +24,7 @@
   "license": "GPL-3.0-or-later",
   "engines": {
     "node": "~20",
-    "npm": "~10"
+    "npm": "~11.3.0"
   },
   "lint-staged": {
     "*": "prettier --cache --write --ignore-unknown"
