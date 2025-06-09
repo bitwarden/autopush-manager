@@ -2,6 +2,8 @@
 
 A module to subscribe to Mozilla Autopush and receive notifications.
 
+This library follows the Mozilla Web Push Proprietary Protocol, helpfully documented in the [Mozilla Push Documentation](https://mozilla-push-service.readthedocs.io/en/latest/design/#webpush-proprietary-protocol).
+
 ## Build
 
 To build the project, run:
