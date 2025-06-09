@@ -44,7 +44,7 @@
     "jest-junit": "16.0.0",
     "jest-mock-extended": "3.0.7",
     "lint-staged": "16.1.0",
-    "npm-run-all2": "5.0.2",
+    "npm-run-all2": "8.0.4",
     "prettier": "3.5.3",
     "rimraf": "6.0.1",
     "ts-jest": "29.3.4",
