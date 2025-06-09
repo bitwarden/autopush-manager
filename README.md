@@ -59,8 +59,8 @@ A single `PushManager` can manage multiple subscriptions, but only one per `appl
 
 Subscriptions have a simplified event interface compared to the native `PushSubscription` interface. It emits only two events
 
--   notification
--   pushsubscriptionchange
+- notification
+- pushsubscriptionchange
 
 ```javascript
 subscription.addEventListener("notification", (message) => {
