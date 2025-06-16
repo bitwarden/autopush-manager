@@ -2,6 +2,8 @@
 
 A module to subscribe to Mozilla Autopush and receive notifications.
 
+This library follows the Mozilla Web Push Proprietary Protocol, helpfully documented in the [Mozilla Push Documentation](https://mozilla-push-service.readthedocs.io/en/latest/design/#webpush-proprietary-protocol).
+
 ## Build
 
 To build the project, run:
@@ -57,8 +59,8 @@ A single `PushManager` can manage multiple subscriptions, but only one per `appl
 
 Subscriptions have a simplified event interface compared to the native `PushSubscription` interface. It emits only two events
 
--   notification
--   pushsubscriptionchange
+- notification
+- pushsubscriptionchange
 
 ```javascript
 subscription.addEventListener("notification", (message) => {
