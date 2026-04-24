@@ -30,12 +30,12 @@
     "*": "prettier --cache --write --ignore-unknown"
   },
   "devDependencies": {
-    "@eslint/js": "9.28.0",
+    "@eslint/js": "10.0.1",
     "@types/eslint__js": "9.14.0",
     "@types/jest": "30.0.0",
     "@types/ws": "8.18.1",
     "@typescript-eslint/parser": "8.33.1",
-    "eslint": "9.28.0",
+    "eslint": "10.2.1",
     "eslint-config-prettier": "10.1.5",
     "eslint-import-resolver-typescript": "4.4.2",
     "eslint-plugin-import": "2.31.0",
