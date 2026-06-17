@@ -1,5 +1,5 @@
 {
-  "name": "autopush-manager",
+  "name": "@bitwarden/autopush-manager",
   "version": "0.1.0",
   "description": "A module to subscribe to Mozilla Autopush and receive notifications",
   "scripts": {
